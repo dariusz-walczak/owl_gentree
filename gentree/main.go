@@ -1,23 +1,26 @@
 package main
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 	"github.com/gin-gonic/gin"
 )
 
-func hello(c *gin.Context) {
-	log.Println("Hello: Entry checkpoint")
-	c.JSON(200, gin.H{
+func createPerson(c *gin.Context) {
+	log.Trace("Entry checkpoint")
+
+	c.JSON(201, gin.H{
 		"message": "hello",
 	})
 
-	log.Println("Hello: Exit checkpoint")
+	log.Info("Created new person resource")
+
+	log.Trace("Exit checkpoint")
 }
 
 func main() {
-	log.Println("Entry checkpoint")
+	log.Trace("Entry checkpoint")
 	r := gin.Default()
-	r.GET("/hello", hello)
+	r.POST("/person", createPerson)
 	r.Run()
-	log.Println("Exit checkpoint")
+	log.Trace("Exit checkpoint")
 }

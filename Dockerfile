@@ -2,7 +2,9 @@ FROM golang AS build
 
 WORKDIR /build/gentree
 COPY gentree/go.mod .
-RUN ["go", "get",  "-u", "github.com/gin-gonic/gin"]
+RUN ["go", "get", "-u", "github.com/gin-gonic/gin"]
+RUN ["go", "get", "-u", "github.com/sirupsen/logrus"]
+
 COPY  gentree/*.go .
 RUN CGO_ENABLED=0 go build
 
