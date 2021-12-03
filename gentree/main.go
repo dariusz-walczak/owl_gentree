@@ -7,19 +7,6 @@ import (
 )
 
 
-func createPerson(c *gin.Context) {
-	log.Trace("Entry checkpoint")
-
-	c.JSON(201, gin.H{
-		"message": "hello",
-	})
-
-	log.Info("Created new person resource")
-
-	log.Trace("Exit checkpoint")
-}
-
-
 func configLogger(args AppArgs) {
 	log.SetLevel(args.LogLevel)
 }
