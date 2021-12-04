@@ -9,6 +9,7 @@ import (
 
 func configLogger(args AppArgs) {
 	log.SetLevel(args.LogLevel)
+	log.SetReportCaller(true)
 }
 
 
@@ -24,5 +25,6 @@ func main() {
 	log.Trace("Entry checkpoint")
 	r := gin.Default()
 	r.POST("/person", createPerson)
+	r.GET("/person/:id", retrievePerson)
 	r.Run()
 }
