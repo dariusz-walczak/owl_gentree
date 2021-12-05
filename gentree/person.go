@@ -9,7 +9,7 @@ import (
 
 
 type personRecord struct {
-	Id string `json:"id" binding:"required,min=3"`
+	Id string `json:"id" binding:"required,alphanum|uuid"`
 	Given string `json:"given_names"`
 	Surname string `json:"surname"`
 }
@@ -72,15 +72,27 @@ func createPerson(c *gin.Context) {
 }
 
 
+type retrievePersonUri struct {
+	Pid string `uri:"id" binding:"required,alphanum|uuid"`
+}
+
+
 func retrievePerson(c *gin.Context) {
 	log.Trace("Entry checkpoint")
 
-	pid := c.Param("id")
+	var params retrievePersonUri
 
-	person, found, err := getPerson(pid)
+    if err := c.ShouldBindUri(&params); err != nil {
+		log.Infof("Uri parameters unmarshalling error: %s", err)
+
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Uri parameters validation error"})
+		return
+    }
+
+	person, found, err := getPerson(params.Pid)
 
 	if !found {
-		log.Infof("The person with given id (%s) doesn't exist", pid)
+		log.Infof("The person with given id (%s) doesn't exist", params.Pid)
 
 		c.JSON(http.StatusNotFound, gin.H{"message": "Unknown person id"})
 		return
@@ -95,5 +107,5 @@ func retrievePerson(c *gin.Context) {
 		http.StatusOK,
 		gin.H{"id": person.Id, "given_names": person.Given, "surname": person.Surname})
 
-	log.Infof("Found the requested person record (%s)", pid)
+	log.Infof("Found the requested person record (%s)", params.Pid)
 }
