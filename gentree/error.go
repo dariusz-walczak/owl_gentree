@@ -9,13 +9,10 @@ const (
 )
 
 /* The error message constants are used to avoid potential, subtle differences in feedback messages
-   allowing potential sniffing of the server implementation details */
+   allowing potential sniffing of the server implementation details. They are returned as the
+   'message' field of the JSON error response. */
 const (
-	/* The internalErrorMsg text is returned as the 'message' field of the JSON error response to
-	   indicate an internal server error. */
 	internalErrorMsg = "Unexpected error occurred"
-	/* The payloadErrorMsg text is returned as the 'message' field of the JSON error response to
-	   indicate the JSON payload schema validation error. */
 	payloadErrorMsg = "Payload validation error"
 )
 
