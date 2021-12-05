@@ -2,21 +2,18 @@ package main
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 )
 
-
 type personRecord struct {
-	Id string `json:"id" binding:"required,alphanum|uuid"`
-	Given string `json:"given_names"`
+	Id      string `json:"id" binding:"required,alphanum|uuid"`
+	Given   string `json:"given_names"`
 	Surname string `json:"surname"`
 }
 
-
 var people = map[string]personRecord{}
-
 
 /* Retrieve a person record by id
  * Returns:
@@ -37,18 +34,17 @@ func getPerson(pid string) (personRecord, bool, error) {
 	return person, true, nil
 }
 
-
 func createPerson(c *gin.Context) {
 	log.Trace("Entry checkpoint")
 
 	var person personRecord
 
-    if err := c.BindJSON(&person); err != nil {
+	if err := c.BindJSON(&person); err != nil {
 		log.Infof("New person data unmarshalling error: %s", err)
 
 		c.JSON(http.StatusBadRequest, gin.H{"message": payloadErrorMsg})
 		return
-    }
+	}
 
 	if _, found, err := getPerson(person.Id); found {
 		log.Infof("A person with given id (%s) already exists", person.Id)
@@ -71,23 +67,21 @@ func createPerson(c *gin.Context) {
 	log.Infof("Created a new person (%s) record", person.Id)
 }
 
-
 type specifyPersonUri struct {
 	Pid string `uri:"id" binding:"required,alphanum|uuid"`
 }
-
 
 func replacePerson(c *gin.Context) {
 	log.Trace("Entry checkpoint")
 
 	var params specifyPersonUri
 
-    if err := c.ShouldBindUri(&params); err != nil {
+	if err := c.ShouldBindUri(&params); err != nil {
 		log.Infof("Uri parameters unmarshalling error: %s", err)
 
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Uri parameters validation error"})
 		return
-    }
+	}
 
 	_, found, err := getPerson(params.Pid)
 
@@ -105,12 +99,12 @@ func replacePerson(c *gin.Context) {
 
 	var person personRecord
 
-    if err := c.BindJSON(&person); err != nil {
+	if err := c.BindJSON(&person); err != nil {
 		log.Infof("Person data unmarshalling error: %s", err)
 
 		c.JSON(http.StatusBadRequest, gin.H{"message": payloadErrorMsg})
 		return
-    }
+	}
 
 	people[person.Id] = person
 
@@ -119,18 +113,17 @@ func replacePerson(c *gin.Context) {
 	log.Infof("Replaced the person (%s) record", person.Id)
 }
 
-
 func retrievePerson(c *gin.Context) {
 	log.Trace("Entry checkpoint")
 
 	var params specifyPersonUri
 
-    if err := c.ShouldBindUri(&params); err != nil {
+	if err := c.ShouldBindUri(&params); err != nil {
 		log.Infof("Uri parameters unmarshalling error: %s", err)
 
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Uri parameters validation error"})
 		return
-    }
+	}
 
 	person, found, err := getPerson(params.Pid)
 
@@ -153,18 +146,17 @@ func retrievePerson(c *gin.Context) {
 	log.Infof("Found the requested person record (%s)", params.Pid)
 }
 
-
 func deletePerson(c *gin.Context) {
 	log.Trace("Entry checkpoint")
 
 	var params specifyPersonUri
 
-    if err := c.ShouldBindUri(&params); err != nil {
+	if err := c.ShouldBindUri(&params); err != nil {
 		log.Infof("Uri parameters unmarshalling error: %s", err)
 
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Uri parameters validation error"})
 		return
-    }
+	}
 
 	_, found, err := getPerson(params.Pid)
 

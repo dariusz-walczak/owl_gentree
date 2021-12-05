@@ -1,17 +1,14 @@
 package main
 
-
 import (
-	"os"
-	log "github.com/sirupsen/logrus"
 	"github.com/jessevdk/go-flags"
+	log "github.com/sirupsen/logrus"
+	"os"
 )
-
 
 type AppArgs struct {
 	LogLevel log.Level
 }
-
 
 // Parse the command line arguments and return the results
 // The returned structure is parser agnostic
@@ -38,7 +35,7 @@ func parseArgs() (AppArgs, error) {
 	}
 
 	// Return the final args structure:
-	return AppArgs {
+	return AppArgs{
 		LogLevel: level,
 	}, nil
 }

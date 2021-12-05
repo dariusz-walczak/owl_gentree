@@ -13,7 +13,7 @@ const (
    'message' field of the JSON error response. */
 const (
 	internalErrorMsg = "Unexpected error occurred"
-	payloadErrorMsg = "Payload validation error"
+	payloadErrorMsg  = "Payload validation error"
 )
 
 type AppError struct {
