@@ -26,5 +26,7 @@ func main() {
 	r.GET("/person/:id", retrievePerson)
 	r.DELETE("/person/:id", deletePerson)
 	r.PUT("/person/:id", replacePerson)
-	r.Run()
+	if err := r.Run(); err != nil {
+		log.Fatalf("An error occurred during the gin server run attempt (%s)", err)
+	}
 }

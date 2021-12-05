@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/jessevdk/go-flags"
+	flags "github.com/jessevdk/go-flags"
 	log "github.com/sirupsen/logrus"
 	"os"
 )
