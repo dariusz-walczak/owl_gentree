@@ -26,5 +26,6 @@ func main() {
 	r := gin.Default()
 	r.POST("/person", createPerson)
 	r.GET("/person/:id", retrievePerson)
+	r.DELETE("/person/:id", deletePerson)
 	r.Run()
 }

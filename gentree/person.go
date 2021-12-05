@@ -72,7 +72,7 @@ func createPerson(c *gin.Context) {
 }
 
 
-type retrievePersonUri struct {
+type specifyPersonUri struct {
 	Pid string `uri:"id" binding:"required,alphanum|uuid"`
 }
 
@@ -80,7 +80,7 @@ type retrievePersonUri struct {
 func retrievePerson(c *gin.Context) {
 	log.Trace("Entry checkpoint")
 
-	var params retrievePersonUri
+	var params specifyPersonUri
 
     if err := c.ShouldBindUri(&params); err != nil {
 		log.Infof("Uri parameters unmarshalling error: %s", err)
@@ -108,4 +108,36 @@ func retrievePerson(c *gin.Context) {
 		gin.H{"id": person.Id, "given_names": person.Given, "surname": person.Surname})
 
 	log.Infof("Found the requested person record (%s)", params.Pid)
+}
+
+
+func deletePerson(c *gin.Context) {
+	log.Trace("Entry checkpoint")
+
+	var params specifyPersonUri
+
+    if err := c.ShouldBindUri(&params); err != nil {
+		log.Infof("Uri parameters unmarshalling error: %s", err)
+
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Uri parameters validation error"})
+		return
+    }
+
+	_, found, err := getPerson(params.Pid)
+
+	if !found {
+		log.Infof("The person with given id (%s) doesn't exist", params.Pid)
+
+		c.JSON(http.StatusNotFound, gin.H{"message": "Unknown person id"})
+		return
+	} else if err != nil {
+		log.Errorf("An error occurred during the person retrieval attempt (%s)", err)
+
+		c.JSON(http.StatusInternalServerError, gin.H{"message": internalErrorMsg})
+		return
+	}
+
+	delete(people, params.Pid)
+
+	log.Infof("Deleted the requested person record (%s)", params.Pid)
 }
