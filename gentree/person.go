@@ -46,7 +46,7 @@ func createPerson(c *gin.Context) {
     if err := c.BindJSON(&person); err != nil {
 		log.Infof("New person data unmarshalling error: %s", err)
 
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Payload validation error"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": payloadErrorMsg})
 		return
     }
 
@@ -74,6 +74,49 @@ func createPerson(c *gin.Context) {
 
 type specifyPersonUri struct {
 	Pid string `uri:"id" binding:"required,alphanum|uuid"`
+}
+
+
+func replacePerson(c *gin.Context) {
+	log.Trace("Entry checkpoint")
+
+	var params specifyPersonUri
+
+    if err := c.ShouldBindUri(&params); err != nil {
+		log.Infof("Uri parameters unmarshalling error: %s", err)
+
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Uri parameters validation error"})
+		return
+    }
+
+	_, found, err := getPerson(params.Pid)
+
+	if !found {
+		log.Infof("The person with given id (%s) doesn't exist and can't be replaced", params.Pid)
+
+		c.JSON(http.StatusNotFound, gin.H{"message": "Unknown person id"})
+		return
+	} else if err != nil {
+		log.Errorf("An error occurred during the person retrieval attempt (%s)", err)
+
+		c.JSON(http.StatusInternalServerError, gin.H{"message": internalErrorMsg})
+		return
+	}
+
+	var person personRecord
+
+    if err := c.BindJSON(&person); err != nil {
+		log.Infof("Person data unmarshalling error: %s", err)
+
+		c.JSON(http.StatusBadRequest, gin.H{"message": payloadErrorMsg})
+		return
+    }
+
+	people[person.Id] = person
+
+	c.JSON(http.StatusOK, gin.H{"message": "Person record replaced"})
+
+	log.Infof("Replaced the person (%s) record", person.Id)
 }
 
 
