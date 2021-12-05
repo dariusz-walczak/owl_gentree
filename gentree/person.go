@@ -46,7 +46,7 @@ func createPerson(c *gin.Context) {
     if err := c.BindJSON(&person); err != nil {
 		log.Infof("New person data unmarshalling error: %s", err)
 
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Payload format error"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Payload validation error"})
 		return
     }
 
