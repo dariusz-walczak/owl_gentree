@@ -9,7 +9,7 @@ import (
 
 
 type personRecord struct {
-	Id string `json:"id"`
+	Id string `json:"id" binding:"required,min=3"`
 	Given string `json:"given_names"`
 	Surname string `json:"surname"`
 }
