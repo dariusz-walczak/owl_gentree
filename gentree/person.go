@@ -39,7 +39,7 @@ func createPerson(c *gin.Context) {
 
 	var person personRecord
 
-	if err := c.BindJSON(&person); err != nil {
+	if err := c.ShouldBindJSON(&person); err != nil {
 		log.Infof("New person data unmarshalling error: %s", err)
 
 		c.JSON(http.StatusBadRequest, gin.H{"message": payloadErrorMsg})
@@ -79,7 +79,7 @@ func replacePerson(c *gin.Context) {
 	if err := c.ShouldBindUri(&params); err != nil {
 		log.Infof("Uri parameters unmarshalling error: %s", err)
 
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Uri parameters validation error"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": uriErrorMsg})
 		return
 	}
 
@@ -99,7 +99,7 @@ func replacePerson(c *gin.Context) {
 
 	var person personRecord
 
-	if err := c.BindJSON(&person); err != nil {
+	if err := c.ShouldBindJSON(&person); err != nil {
 		log.Infof("Person data unmarshalling error: %s", err)
 
 		c.JSON(http.StatusBadRequest, gin.H{"message": payloadErrorMsg})
@@ -121,7 +121,7 @@ func retrievePerson(c *gin.Context) {
 	if err := c.ShouldBindUri(&params); err != nil {
 		log.Infof("Uri parameters unmarshalling error: %s", err)
 
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Uri parameters validation error"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": uriErrorMsg})
 		return
 	}
 
@@ -154,7 +154,7 @@ func deletePerson(c *gin.Context) {
 	if err := c.ShouldBindUri(&params); err != nil {
 		log.Infof("Uri parameters unmarshalling error: %s", err)
 
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Uri parameters validation error"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": uriErrorMsg})
 		return
 	}
 
