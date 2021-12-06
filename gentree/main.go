@@ -22,10 +22,11 @@ func main() {
 
 	log.Trace("Entry checkpoint")
 	r := gin.Default()
-	r.POST("/person", createPerson)
-	r.GET("/person/:id", retrievePerson)
-	r.DELETE("/person/:id", deletePerson)
-	r.PUT("/person/:id", replacePerson)
+	r.POST("/people", createPerson)
+	r.GET("/people/:id", retrievePerson)
+	r.DELETE("/people/:id", deletePerson)
+	r.PUT("/people/:id", replacePerson)
+
 	if err := r.Run(); err != nil {
 		log.Fatalf("An error occurred during the gin server run attempt (%s)", err)
 	}
