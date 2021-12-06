@@ -176,3 +176,47 @@ func deletePerson(c *gin.Context) {
 
 	log.Infof("Deleted the requested person record (%s)", params.Pid)
 }
+
+func updatePerson(c *gin.Context) {
+	log.Trace("Entry checkpoint")
+
+	var params specifyPersonUri
+
+	if err := c.ShouldBindUri(&params); err != nil {
+		log.Infof("Uri parameters unmarshalling error: %s", err)
+
+		c.JSON(http.StatusBadRequest, gin.H{"message": uriErrorMsg})
+		return
+	}
+
+	person, found, err := getPerson(params.Pid)
+
+	if !found {
+		log.Infof("The person with given id (%s) doesn't exist and can't be updated", params.Pid)
+
+		c.JSON(http.StatusNotFound, gin.H{"message": "Unknown person id"})
+		return
+	} else if err != nil {
+		log.Errorf("An error occurred during the person retrieval attempt (%s)", err)
+
+		c.JSON(http.StatusInternalServerError, gin.H{"message": internalErrorMsg})
+		return
+	}
+
+	var personPatch personRecord
+
+	if err := c.ShouldBindJSON(&personPatch); err != nil {
+		log.Infof("Person data unmarshalling error: %s", err)
+
+		c.JSON(http.StatusBadRequest, gin.H{"message": payloadErrorMsg})
+		return
+	}
+
+	log.Infof("Id      = '%s'", personPatch.Id)
+	log.Infof("Given   = '%s'", personPatch.Given)
+	log.Infof("Surname = '%s'", personPatch.Surname)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Person record updated"})
+
+	log.Infof("Updated the person (%s) record", person.Id)
+}
