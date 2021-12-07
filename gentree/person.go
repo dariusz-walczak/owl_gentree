@@ -7,10 +7,18 @@ import (
 	"net/http"
 )
 
+// Possible gender values
+const (
+	gMale    = "male"
+	gFemale  = "female"
+	gUnknown = "unknown"
+)
+
 type personRecord struct {
 	Id      string `json:"id" binding:"required,alphanum|uuid"`
 	Given   string `json:"given_names"`
 	Surname string `json:"surname"`
+	Gender  string `json:"gender" binding:"isdefault|oneof=male female unknown"`
 }
 
 var people = map[string]personRecord{}
@@ -32,6 +40,12 @@ func getPerson(pid string) (personRecord, bool, error) {
 	}
 
 	return person, true, nil
+}
+
+func (p *personRecord) applyDefaults() {
+	if p.Gender == "" {
+		p.Gender = gUnknown
+	}
 }
 
 func createPerson(c *gin.Context) {
@@ -60,6 +74,7 @@ func createPerson(c *gin.Context) {
 		return
 	}
 
+	person.applyDefaults()
 	people[person.Id] = person
 
 	c.JSON(http.StatusCreated, gin.H{"message": "ok"})
@@ -106,6 +121,7 @@ func replacePerson(c *gin.Context) {
 		return
 	}
 
+	person.applyDefaults()
 	people[person.Id] = person
 
 	c.JSON(http.StatusOK, gin.H{"message": "Person record replaced"})
@@ -139,9 +155,7 @@ func retrievePerson(c *gin.Context) {
 		return
 	}
 
-	c.JSON(
-		http.StatusOK,
-		gin.H{"id": person.Id, "given_names": person.Given, "surname": person.Surname})
+	c.JSON(http.StatusOK, person)
 
 	log.Infof("Found the requested person record (%s)", params.Pid)
 }
