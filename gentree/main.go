@@ -27,6 +27,8 @@ func main() {
 	r.DELETE("/people/:id", deletePerson)
 	r.PUT("/people/:id", replacePerson)
 
+	r.POST("/relation", createRelation)
+
 	if err := r.Run(); err != nil {
 		log.Fatalf("An error occurred during the gin server run attempt (%s)", err)
 	}

@@ -19,6 +19,14 @@ const (
 	uriErrorMsg = "URI validation error"
 )
 
+// Error codes to be used with the AppError structure:
+const (
+	errUnspecified = iota
+	errDuplicateFound
+	// Generation of a random identifier has failed due to the id pool starting to exhaust
+	errIdGenerationFailed
+)
+
 type AppError struct {
 	Code int
 	msg  string
