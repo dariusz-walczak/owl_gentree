@@ -136,6 +136,11 @@ func findRelation(pid1 string, typ string, pid2 string) (relationRecord, bool, e
    *** The first person in the father relation must be a male
    *** The first person in the mother relation must be a female
    *** The first person in the husband relation must be a male and the second one must be a female
+   ** Relations of the same type already exist for some of the people (multiple fathers/mothers case)
+   *** The second person in the father relation mustn't have any other father relation in which they
+       are the target (the second) person
+   *** The second person in the mother relation mustn't have any other mother relation in which they
+       are the target (the second) person
    * The current approach to the relation types is absolutely minimal on purpose:
    ** The first implementation is easier in terms of data errors detection with such a simple model
    ** The need to add less common relations (same sex partnerships, child adoption, etc.) is
@@ -191,8 +196,23 @@ func validateRelation(r relationRecord) (bool, error) {
 		return false, nil
 	}
 
-	log.Infof("p1: %+v", p1)
-	log.Infof("p2: %+v", p2)
+	// Check the multiple fathers/mothers case:
+
+	if (r.Type == relFather) || (r.Type == relMother) {
+		other, found, err := findRelation("", r.Type, r.Pid2)
+
+		if found {
+			log.Infof(
+				"Found another (%d) %s relation for the target person (%s)",
+				other.Id, r.Type, r.Pid2)
+
+			return false, nil
+		} else if err != nil {
+			log.Tracef("An error occurred during the relation retrieval attempt (%s)", err)
+
+			return false, err
+		}
+	}
 
 	return true, nil
 }
@@ -221,7 +241,7 @@ func createRelation(c *gin.Context) {
 				relation.Pid1, relation.Type, relation.Pid2)})
 		return
 	} else if err != nil {
-		log.Infof("An error occurred during the relations retrieval attempt (%s)", err)
+		log.Infof("An error occurred during the relation retrieval attempt (%s)", err)
 
 		c.JSON(http.StatusInternalServerError, gin.H{"message": internalErrorMsg})
 		return
