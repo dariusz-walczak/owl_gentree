@@ -104,7 +104,7 @@ func findRelations(pid1 string, typ string, pid2 string) ([]relationRecord, erro
    Returns:
    * Relation record structure (uninitialized if not found or when an error occurred)
    * Success flag (true if one and only one record was found, and false otherwise)
-   * Error (if occurred) */
+   * Error (if occurred and nil otherwise) */
 func findRelation(pid1 string, typ string, pid2 string) (relationRecord, bool, error) {
 	relations, err := findRelations(pid1, typ, pid2)
 
@@ -122,6 +122,81 @@ func findRelation(pid1 string, typ string, pid2 string) (relationRecord, bool, e
 	return relationRecord{}, false, nil
 }
 
+/* Check if the relation record is valid considering people records and other existing relation
+   records.
+
+   Return:
+   * Outcome flag (true if the relation is valid and false otherwise)
+   * Error (if occurred and nil otherwise)
+
+   Design Assumptions:
+   * The relation is considered invalid when:
+   ** At least one of the related people doesn't exist
+   ** The people gender is inconsistent with the gender implied by the relation type:
+   *** The first person in the father relation must be a male
+   *** The first person in the mother relation must be a female
+   *** The first person in the husband relation must be a male and the second one must be a female
+   * The current approach to the relation types is absolutely minimal on purpose:
+   ** The first implementation is easier in terms of data errors detection with such a simple model
+   ** The need to add less common relations (same sex partnerships, child adoption, etc.) is
+      recognized but planned as an extension when the basic functionality works. */
+func validateRelation(r relationRecord) (bool, error) {
+	p1, found, err := getPerson(r.Pid1)
+
+	if !found {
+		log.Infof(
+			"The person (%s) referenced by the relation (%s, %s, %s) doesn't exist",
+			r.Pid1, r.Pid1, r.Type, r.Pid2)
+
+		return false, nil
+	} else if err != nil {
+		log.Tracef("An error occurred during the person retrieval attempt (%s)", err)
+
+		return false, err
+	}
+
+	if (p1.Gender != gMale) && (r.Type == relFather || r.Type == relHusband) {
+		log.Infof(
+			"Unexpected person (%s) gender (%s): for the '%s' relation, '%s' is expected",
+			p1.Id, p1.Gender, r.Type, gMale)
+
+		return false, nil
+	} else if (p1.Gender != gFemale) && (r.Type == relMother) {
+		log.Infof(
+			"Unexpected person (%s) gender (%s): for the '%s' relation, '%s' is expected",
+			p1.Id, p1.Gender, r.Type, gFemale)
+
+		return false, nil
+	}
+
+	p2, found, err := getPerson(r.Pid2)
+
+	if !found {
+		log.Debugf(
+			"The person (%s) referenced by the relation (%s, %s, %s) doesn't exist",
+			r.Pid2, r.Pid1, r.Type, r.Pid2)
+
+		return false, nil
+	} else if err != nil {
+		log.Tracef("An error occurred during the person retrieval attempt (%s)", err)
+
+		return false, err
+	}
+
+	if (p2.Gender != gFemale) && (r.Type == relHusband) {
+		log.Infof(
+			"Unexpected person (%s) gender (%s): for the '%s' relation, '%s' is expected",
+			p2.Id, p2.Gender, r.Type, gFemale)
+
+		return false, nil
+	}
+
+	log.Infof("p1: %+v", p1)
+	log.Infof("p2: %+v", p2)
+
+	return true, nil
+}
+
 func createRelation(c *gin.Context) {
 	log.Trace("Entry checkpoint")
 
@@ -136,8 +211,6 @@ func createRelation(c *gin.Context) {
 
 	relation := payload.toRelationRecord()
 
-	//validateRelation : gender vs type
-
 	if _, found, err := findRelation(relation.Pid1, relation.Type, relation.Pid2); found {
 		log.Infof(
 			"A relation (%d) matching given attributes (%s, %s, %s) already exists",
@@ -149,6 +222,24 @@ func createRelation(c *gin.Context) {
 		return
 	} else if err != nil {
 		log.Infof("An error occurred during the relations retrieval attempt (%s)", err)
+
+		c.JSON(http.StatusInternalServerError, gin.H{"message": internalErrorMsg})
+		return
+	}
+
+	valid, err := validateRelation(relation)
+
+	if !valid {
+		log.Infof(
+			"The relation (%s, %s, %s) is not valid",
+			relation.Pid1, relation.Type, relation.Pid2)
+
+		c.JSON(http.StatusBadRequest,
+			gin.H{"message": fmt.Sprintf("Relation (%s, %s, %s) is invalid",
+				relation.Pid1, relation.Type, relation.Pid2)})
+		return
+	} else if err != nil {
+		log.Errorf("An error occurred during the relation validation (%s)", err)
 
 		c.JSON(http.StatusInternalServerError, gin.H{"message": internalErrorMsg})
 		return
