@@ -16,8 +16,6 @@ const (
 	relHusband = "husband"
 )
 
-var relAll = []string{relFather, relMother, relHusband}
-
 type relationRecord struct {
 	Id   int64  `json:"id" binding:"required,hexadecimal"`
 	Pid1 string `json:"pid1" binding:"required,alphanum|uuid"`
@@ -71,12 +69,12 @@ func getNextRelationId() (int64, error) {
 }
 
 func getRelation(id int64) (relationRecord, bool, error) {
-	log.Debugf("Retrieving relation record by id (%s)", id)
+	log.Debugf("Retrieving relation record by id (%d)", id)
 
 	relation, found := relations[id]
 
 	if !found {
-		log.Debugf("Relation record (%s) not found", id)
+		log.Debugf("Relation record (%d) not found", id)
 
 		return relation, false, nil
 	}
@@ -170,5 +168,5 @@ func createRelation(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{"message": "ok"})
 
-	log.Infof("Created a new relation (%s) record", relation.Id)
+	log.Infof("Created a new relation (%d) record", relation.Id)
 }
