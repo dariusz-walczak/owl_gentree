@@ -17,6 +17,8 @@ const (
 	payloadErrorMsg = "Payload validation error"
 	// At least one parameter extracted from an uri was invalid
 	uriErrorMsg = "URI validation error"
+	// At least one query parameters was invalid
+	queryErrorMsg = "Query validation error"
 )
 
 // Error codes to be used with the AppError structure:
@@ -25,6 +27,8 @@ const (
 	errDuplicateFound
 	// Generation of a random identifier has failed due to the id pool starting to exhaust
 	errIdGenerationFailed
+	// Function arguments are invalid (e.g. out of bounds)
+	errInvalidArgument
 )
 
 type AppError struct {

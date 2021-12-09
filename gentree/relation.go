@@ -9,6 +9,7 @@ import (
 	"math"
 	"math/big"
 	"net/http"
+	"sort"
 )
 
 const (
@@ -85,21 +86,36 @@ func getRelation(id int64) (relationRecord, bool, error) {
 
 /* Get all the relation records associated with the given person
 
+   Params:
+   * pid - the person identifier
+   * pageIdx - the zero based index of the results page to be returned (must be greater or equal to
+     zero)
+   * pageSize - the maximum size of the page to be returned (must be between minPageSize and
+     maxPageSize)
+
    Return:
    * slice of relation records (empty if an error occurred)
    * error (if occurred and nil otherwise) */
-func getRelations(pid string) ([]relationRecord, error) {
+func getRelations(pid string, pageIdx int, pageSize int) ([]relationRecord, error) {
 	log.Debugf("Retrieving all the relations of given person (%s)", pid)
 
-	var result []relationRecord
-
-	for _, r := range relations {
-		if (r.Pid1 == pid) || (r.Pid2 == pid) {
-			result = append(result, r)
-		}
+	if err := checkPaginationParams(pageIdx, pageSize); err != nil {
+		return []relationRecord{}, err
 	}
 
-	return result, nil
+	// Extract slice of all the values (relation records) of the relations map
+	sorted := make([]relationRecord, 0, len(relations))
+
+	for _, r := range relations {
+		sorted = append(sorted, r)
+	}
+
+	sort.Slice(sorted, func(i, j int) bool { return sorted[i].Id < sorted[j].Id })
+
+	first := minInt(pageIdx*pageSize, len(sorted))
+	last := minInt((pageIdx+1)*pageSize, len(sorted))
+
+	return sorted[first:last], nil
 }
 
 func findRelations(pid1 string, typ string, pid2 string) ([]relationRecord, error) {
@@ -379,10 +395,19 @@ func retrievePersonRelations(c *gin.Context) {
 
 	if err := c.ShouldBindUri(&params); err != nil {
 		log.Infof("Uri parameters unmarshalling error: %s", err)
-
 		c.JSON(http.StatusBadRequest, gin.H{"message": uriErrorMsg})
 		return
 	}
+
+	var pagination pagePaginationQuery
+
+	if err := c.ShouldBindQuery(&pagination); err != nil {
+		log.Infof("Query parameters unmarshalling error: %s", err)
+		c.JSON(http.StatusBadRequest, gin.H{"message": queryErrorMsg})
+		return
+	}
+
+	pagination.applyDefaults()
 
 	if _, found, err := getPerson(params.Pid); !found {
 		log.Infof("The person with given id (%s) doesn't exist", params.Pid)
@@ -394,7 +419,7 @@ func retrievePersonRelations(c *gin.Context) {
 		return
 	}
 
-	relations, err := getRelations(params.Pid)
+	relations, err := getRelations(params.Pid, pagination.Page, pagination.Limit)
 
 	if err != nil {
 		log.Errorf("An error occurred during relations retrieval attempt (%s)", err)
