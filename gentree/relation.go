@@ -237,19 +237,12 @@ func validateRelation(r relationRecord) (bool, error) {
 	return true, nil
 }
 
-func createRelation(c *gin.Context) {
+/* The lower level implementation of the create relation request.
+
+   The upper level handlers are adapters taking relation record parameters from different
+   sources */
+func doCreateRelation(c *gin.Context, relation relationRecord) {
 	log.Trace("Entry checkpoint")
-
-	var payload relationPayload
-
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		log.Infof("New relation data unmarshalling error: %s", err)
-
-		c.JSON(http.StatusBadRequest, gin.H{"message": payloadErrorMsg})
-		return
-	}
-
-	relation := payload.toRelationRecord()
 
 	if _, found, err := findRelation(relation.Pid1, relation.Type, relation.Pid2); found {
 		log.Infof(
@@ -304,6 +297,45 @@ func createRelation(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "ok"})
 
 	log.Infof("Created a new relation (%d) record", relation.Id)
+}
+
+func createRelation(c *gin.Context) {
+	log.Trace("Entry checkpoint")
+
+	var payload relationPayload
+
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		log.Infof("New relation data unmarshalling error: %s", err)
+
+		c.JSON(http.StatusBadRequest, gin.H{"message": payloadErrorMsg})
+		return
+	}
+
+	doCreateRelation(c, payload.toRelationRecord())
+}
+
+func createPersonRelation(c *gin.Context) {
+	log.Trace("Entry checkpoint")
+
+	var params specifyPersonUri
+
+	if err := c.ShouldBindUri(&params); err != nil {
+		log.Infof("Uri parameters unmarshalling error: %s", err)
+
+		c.JSON(http.StatusBadRequest, gin.H{"message": uriErrorMsg})
+		return
+	}
+
+	var payload personRelationPayload
+
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		log.Infof("New relation data unmarshalling error: %s", err)
+
+		c.JSON(http.StatusBadRequest, gin.H{"message": payloadErrorMsg})
+		return
+	}
+
+	doCreateRelation(c, payload.toRelationRecord(params.Pid))
 }
 
 type specifyRelationUri struct {

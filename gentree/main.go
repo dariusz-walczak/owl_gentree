@@ -32,6 +32,7 @@ func main() {
 
 	r.POST("/relations", createRelation)
 	r.GET("/relations/:rid", retrieveRelation)
+	r.POST("/people/:pid/relations", createPersonRelation)
 	r.GET("/people/:pid/relations", retrievePersonRelations)
 
 	if err := r.Run(); err != nil {
