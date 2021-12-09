@@ -23,9 +23,9 @@ func main() {
 	log.Trace("Entry checkpoint")
 	r := gin.Default()
 	r.POST("/people", createPerson)
-	r.GET("/people/:id", retrievePerson)
-	r.DELETE("/people/:id", deletePerson)
-	r.PUT("/people/:id", replacePerson)
+	r.GET("/people/:pid", retrievePerson)
+	r.DELETE("/people/:pid", deletePerson)
+	r.PUT("/people/:pid", replacePerson)
 
 	r.POST("/relations", createRelation)
 

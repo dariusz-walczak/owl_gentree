@@ -83,7 +83,7 @@ func createPerson(c *gin.Context) {
 }
 
 type specifyPersonUri struct {
-	Pid string `uri:"id" binding:"required,alphanum|uuid"`
+	Pid string `uri:"pid" binding:"required,alphanum|uuid"`
 }
 
 func replacePerson(c *gin.Context) {
