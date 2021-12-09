@@ -3,6 +3,7 @@ package main
 import (
 	rand "crypto/rand"
 	"fmt"
+	"github.com/gin-contrib/location"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"math"
@@ -296,6 +297,10 @@ func createRelation(c *gin.Context) {
 	relation.Id = id
 	relations[id] = relation
 
+	url := location.Get(c)
+	url.Path = fmt.Sprintf("/relations/%d", id)
+
+	c.Header("Location", url.String())
 	c.JSON(http.StatusCreated, gin.H{"message": "ok"})
 
 	log.Infof("Created a new relation (%d) record", relation.Id)

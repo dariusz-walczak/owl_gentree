@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/gin-contrib/location"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"os"
@@ -22,6 +23,8 @@ func main() {
 
 	log.Trace("Entry checkpoint")
 	r := gin.Default()
+	r.Use(location.Default())
+
 	r.POST("/people", createPerson)
 	r.GET("/people/:pid", retrievePerson)
 	r.DELETE("/people/:pid", deletePerson)
