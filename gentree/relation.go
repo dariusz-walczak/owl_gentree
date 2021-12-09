@@ -17,7 +17,7 @@ const (
 )
 
 type relationRecord struct {
-	Id   int64  `json:"id" binding:"required,hexadecimal"`
+	Id   int64  `json:"id" binding:"required"`
 	Pid1 string `json:"pid1" binding:"required,alphanum|uuid"`
 	Pid2 string `json:"pid2" binding:"required,alphanum|uuid"`
 	Type string `json:"type" binding:"oneof=father mother husband"`
@@ -299,6 +299,39 @@ func createRelation(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "ok"})
 
 	log.Infof("Created a new relation (%d) record", relation.Id)
+}
+
+type specifyRelationUri struct {
+	Rid int64 `uri:"rid" binding:"required"`
+}
+
+// Retrieve the relation specified through the relation id (provided in the uri)
+func retrieveRelation(c *gin.Context) {
+	log.Trace("Entry checkpoint")
+
+	var params specifyRelationUri
+
+	if err := c.ShouldBindUri(&params); err != nil {
+		log.Infof("Uri parameters unmarshalling error: %s", err)
+		c.JSON(http.StatusBadRequest, gin.H{"message": uriErrorMsg})
+		return
+	}
+
+	relation, found, err := getRelation(params.Rid)
+
+	if !found {
+		log.Infof("The relation with given id (%d) doesn't exist", params.Rid)
+		c.JSON(http.StatusNotFound, gin.H{"message": "Unknown relation id"})
+		return
+	} else if err != nil {
+		log.Errorf("An error occurred during the relation retrieval attempt (%s)", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"message": internalErrorMsg})
+		return
+	}
+
+	c.JSON(http.StatusOK, relation)
+
+	log.Infof("Found the requested relation record (%d)", params.Rid)
 }
 
 // Retrieve all the relations of the given person

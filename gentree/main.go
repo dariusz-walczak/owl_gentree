@@ -28,6 +28,7 @@ func main() {
 	r.PUT("/people/:pid", replacePerson)
 
 	r.POST("/relations", createRelation)
+	r.GET("/relations/:rid", retrieveRelation)
 	r.GET("/people/:pid/relations", retrievePersonRelations)
 
 	if err := r.Run(); err != nil {
