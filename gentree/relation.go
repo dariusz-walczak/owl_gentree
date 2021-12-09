@@ -82,6 +82,25 @@ func getRelation(id int64) (relationRecord, bool, error) {
 	return relation, true, nil
 }
 
+/* Get all the relation records associated with the given person
+
+   Return:
+   * slice of relation records (empty if an error occurred)
+   * error (if occurred and nil otherwise) */
+func getRelations(pid string) ([]relationRecord, error) {
+	log.Debugf("Retrieving all the relations of given person (%s)", pid)
+
+	var result []relationRecord
+
+	for _, r := range relations {
+		if (r.Pid1 == pid) || (r.Pid2 == pid) {
+			result = append(result, r)
+		}
+	}
+
+	return result, nil
+}
+
 func findRelations(pid1 string, typ string, pid2 string) ([]relationRecord, error) {
 	log.Debugf("Looking for matching relations (%s, %s, %s)", pid1, typ, pid2)
 
@@ -102,9 +121,9 @@ func findRelations(pid1 string, typ string, pid2 string) ([]relationRecord, erro
 /* Find the relation record matching given attributes
    In the case of multiple matching relations, return a duplicate error.
    Returns:
-   * Relation record structure (uninitialized if not found or when an error occurred)
-   * Success flag (true if one and only one record was found, and false otherwise)
-   * Error (if occurred and nil otherwise) */
+   * relation record structure (uninitialized if not found or when an error occurred)
+   * success flag (true if one and only one record was found, and false otherwise)
+   * error (if occurred and nil otherwise) */
 func findRelation(pid1 string, typ string, pid2 string) (relationRecord, bool, error) {
 	relations, err := findRelations(pid1, typ, pid2)
 
@@ -280,4 +299,40 @@ func createRelation(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "ok"})
 
 	log.Infof("Created a new relation (%d) record", relation.Id)
+}
+
+// Retrieve all the relations of the given person
+func retrievePersonRelations(c *gin.Context) {
+	log.Trace("Entry checkpoint")
+
+	var params specifyPersonUri
+
+	if err := c.ShouldBindUri(&params); err != nil {
+		log.Infof("Uri parameters unmarshalling error: %s", err)
+
+		c.JSON(http.StatusBadRequest, gin.H{"message": uriErrorMsg})
+		return
+	}
+
+	if _, found, err := getPerson(params.Pid); !found {
+		log.Infof("The person with given id (%s) doesn't exist", params.Pid)
+		c.JSON(http.StatusNotFound, gin.H{"message": "Unknown person id"})
+		return
+	} else if err != nil {
+		log.Errorf("An error occurred during the person retrieval attempt (%s)", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"message": internalErrorMsg})
+		return
+	}
+
+	relations, err := getRelations(params.Pid)
+
+	if err != nil {
+		log.Errorf("An error occurred during relations retrieval attempt (%s)", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"message": internalErrorMsg})
+		return
+	}
+
+	c.JSON(http.StatusOK, relations)
+
+	log.Infof("Found %d relations for the requested person (%s)", len(relations), params.Pid)
 }

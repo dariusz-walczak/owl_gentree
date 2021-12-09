@@ -28,6 +28,7 @@ func main() {
 	r.PUT("/people/:pid", replacePerson)
 
 	r.POST("/relations", createRelation)
+	r.GET("/people/:pid/relations", retrievePersonRelations)
 
 	if err := r.Run(); err != nil {
 		log.Fatalf("An error occurred during the gin server run attempt (%s)", err)
