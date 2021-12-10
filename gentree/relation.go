@@ -1,121 +1,79 @@
 package main
 
 import (
-	rand "crypto/rand"
 	"fmt"
 	"github.com/gin-contrib/location"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
-	"math"
-	"math/big"
 	"net/http"
-	"sort"
 )
 
-const (
-	relFather  = "father"
-	relMother  = "mother"
-	relHusband = "husband"
-)
-
-type relationRecord struct {
+type relationPayload struct {
 	Id   int64  `json:"id" binding:"required"`
 	Pid1 string `json:"pid1" binding:"required,alphanum|uuid"`
 	Pid2 string `json:"pid2" binding:"required,alphanum|uuid"`
 	Type string `json:"type" binding:"oneof=father mother husband"`
 }
 
-// Payload for the createPersonRelation request (POST /people/:pid/relations)
-// The first person id is taken from the uri and the second is taken from the payload
-type personRelationPayload struct {
+/* Create a relation record from a payload struct
+
+   Used by request handlers when communicating with the storage backend.
+
+   Returns:
+   * relation record (used for interaction with the storage backend) */
+func (p *relationPayload) toRelationRecord() relationRecord {
+	return relationRecord{p.Id, p.Pid1, p.Pid2, p.Type}
+}
+
+/* Create a relation payload from a relation record
+
+   Used by request handlers when responding with data provided by the storage backend.
+
+   Returns:
+   * relation payload (used as request response to be marshalled) */
+func (r *relationRecord) toPayload() relationPayload {
+	return relationPayload{r.Id, r.Pid1, r.Pid2, r.Type}
+}
+
+func (relations relationList) toPayload() []relationPayload {
+	payload := make([]relationPayload, 0, len(relations))
+
+	for _, r := range relations {
+		payload = append(payload, r.toPayload())
+	}
+
+	return payload
+}
+
+/* Relation payload accepted by the createPersonRelation handler */
+type itRelationPayload struct {
+	// Target person identifier
 	Pid  string `json:"pid" binding:"required,alphanum|uuid"`
 	Type string `json:"type" binding:"oneof=father mother husband"`
 }
 
-func (r *personRelationPayload) toRelationRecord(targetPid string) relationRecord {
-	return relationRecord{0, targetPid, r.Pid, r.Type}
+/* Create a relation record from a payload struct
+
+   Used by request handlers when communicating with the storage backend.
+
+   Params:
+   * sourcePid - id of the relation source person (not included in the payload) */
+func (p *itRelationPayload) toRelationRecord(sourcePid string) relationRecord {
+	return relationRecord{0, sourcePid, p.Pid, p.Type}
 }
 
-// Payload for the createRelation request (POST /relations)
-type relationPayload struct {
+/* Relation payload accepted by the createRelation handler */
+type iitRelationPayload struct {
 	Pid1 string `json:"pid1" binding:"required,alphanum|uuid"`
 	Pid2 string `json:"pid2" binding:"required,alphanum|uuid"`
 	Type string `json:"type" binding:"oneof=father mother husband"`
 }
 
-func (r *relationPayload) toRelationRecord() relationRecord {
-	return relationRecord{0, r.Pid1, r.Pid2, r.Type}
-}
+/* Create a relation record from a payload struct
 
-var relations = map[int64]relationRecord{}
-
-func getNextRelationId() (int64, error) {
-	const maxAttempts = 5
-
-	for i := 0; i < maxAttempts; i++ {
-		num, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
-		if err != nil {
-			return 0, err
-		}
-
-		if _, found := relations[num.Int64()]; !found {
-			return num.Int64(), nil
-		}
-	}
-
-	msg := fmt.Sprintf("Failed to generate relation id %d attempts", maxAttempts)
-
-	log.Warn(msg)
-
-	return 0, AppError{errIdGenerationFailed, msg}
-}
-
-func getRelation(id int64) (relationRecord, bool, error) {
-	log.Debugf("Retrieving relation record by id (%d)", id)
-
-	relation, found := relations[id]
-
-	if !found {
-		log.Debugf("Relation record (%d) not found", id)
-
-		return relation, false, nil
-	}
-
-	return relation, true, nil
-}
-
-/* Get all the relation records associated with the given person
-
-   Params:
-   * pid - the person identifier
-   * pageIdx - the zero based index of the results page to be returned (must be greater or equal to
-     zero)
-   * pageSize - the maximum size of the page to be returned (must be between minPageSize and
-     maxPageSize)
-
-   Return:
-   * slice of relation records (empty if an error occurred)
-   * error (if occurred and nil otherwise) */
-func getRelations(pid string, pageIdx int, pageSize int) ([]relationRecord, error) {
-	log.Debugf("Retrieving all the relations of given person (%s)", pid)
-
-	if err := checkPaginationParams(pageIdx, pageSize); err != nil {
-		return []relationRecord{}, err
-	}
-
-	// Extract slice of all the values (relation records) of the relations map
-	sorted := make([]relationRecord, 0, len(relations))
-
-	for _, r := range relations {
-		sorted = append(sorted, r)
-	}
-
-	sort.Slice(sorted, func(i, j int) bool { return sorted[i].Id < sorted[j].Id })
-
-	first := minInt(pageIdx*pageSize, len(sorted))
-	last := minInt((pageIdx+1)*pageSize, len(sorted))
-
-	return sorted[first:last], nil
+   Used by request handlers when communicating with the storage backend. */
+func (p *iitRelationPayload) toRelationRecord() relationRecord {
+	return relationRecord{0, p.Pid1, p.Pid2, p.Type}
 }
 
 func findRelations(pid1 string, typ string, pid2 string) ([]relationRecord, error) {
@@ -318,7 +276,7 @@ func doCreateRelation(c *gin.Context, relation relationRecord) {
 func createRelation(c *gin.Context) {
 	log.Trace("Entry checkpoint")
 
-	var payload relationPayload
+	var payload iitRelationPayload
 
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		log.Infof("New relation data unmarshalling error: %s", err)
@@ -342,7 +300,7 @@ func createPersonRelation(c *gin.Context) {
 		return
 	}
 
-	var payload personRelationPayload
+	var payload itRelationPayload
 
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		log.Infof("New relation data unmarshalling error: %s", err)
@@ -370,7 +328,7 @@ func retrieveRelation(c *gin.Context) {
 		return
 	}
 
-	relation, found, err := getRelation(params.Rid)
+	relation, found, err := queryRelationById(params.Rid)
 
 	if !found {
 		log.Infof("The relation with given id (%d) doesn't exist", params.Rid)
@@ -382,7 +340,7 @@ func retrieveRelation(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, relation)
+	c.JSON(http.StatusOK, relation.toPayload())
 
 	log.Infof("Found the requested relation record (%d)", params.Rid)
 }
@@ -419,7 +377,7 @@ func retrievePersonRelations(c *gin.Context) {
 		return
 	}
 
-	relations, err := getRelations(params.Pid, pagination.Page, pagination.Limit)
+	relations, err := queryRelationsByPerson(params.Pid, pagination.Page, pagination.Limit)
 
 	if err != nil {
 		log.Errorf("An error occurred during relations retrieval attempt (%s)", err)
@@ -427,7 +385,7 @@ func retrievePersonRelations(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, relations)
+	c.JSON(http.StatusOK, relations.toPayload())
 
 	log.Infof("Found %d relations for the requested person (%s)", len(relations), params.Pid)
 }
