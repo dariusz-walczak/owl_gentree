@@ -31,13 +31,14 @@ var relations = map[int64]relationRecord{}
 
 /* Generate a new, unique relation id
 
-   The id mustn't exist in the relations table. The generation is performed using cryptographic
-   random function. The function fails with an error if it wasn't able to generate a new unique
-   number in multiple attempts.
+   The function generates a random, unique identifier using a cryptographic function. It always
+   uses the entire identifier pool, so the chance for a conflict increases with the increasing
+   number of existing records. If multiple attempts of unique identifier generation fail, the
+   function will fail, too.
 
    Returns:
-   * new relation record identifier (unique in the scope of the relations map)
-   * error (if occurred or when generation failed and nil otherwise) */
+   * new relation record identifier (unique in the scope of the relations table)
+   * error (if occurred or when the generation failed and nil otherwise) */
 func getNextRelationId() (int64, error) {
 	const maxAttempts = 5
 
@@ -83,7 +84,7 @@ func queryRelationById(id int64) (relationRecord, bool, error) {
 
    Params:
    * pid - the person identifier
-   * pageIdx - the zero based index of the results page to be returned (must be greater or equal to
+   * pageIdx - the zero-based index of the results page to be returned (must be greater or equal to
      zero)
    * pageSize - the maximum size of the page to be returned (must be between minPageSize and
      maxPageSize)
@@ -166,15 +167,17 @@ func queryRelationByData(pid1 string, typ string, pid2 string) (relationRecord, 
    ** The people gender is inconsistent with the gender implied by the relation type:
    *** The first person in the father relation must be a male
    *** The first person in the mother relation must be a female
-   *** The first person in the husband relation must be a male and the second one must be a female
-   ** Relations of the same type already exist for some of the people (multiple fathers/mothers case)
-   *** The second person in the father relation mustn't have any other father relation in which they
-       are the target (the second) person
-   *** The second person in the mother relation mustn't have any other mother relation in which they
-       are the target (the second) person
-   * The current approach to the relation types is absolutely minimal on purpose:
-   ** The first implementation is easier in terms of data errors detection with such a simple model
-   ** The need to add less common relations (same sex partnerships, child adoption, etc.) is
+   *** The first person in the husband relation must be a male, and the second one must be a female
+   ** Relations of the same type already exist for some of the people (case of multiple fathers or
+      mothers)
+   *** The second person in the father relation mustn't have any other father relation in which
+       they are the target (the second) person
+   *** The second person in the mother relation mustn't have any other mother relation in which
+       they are the target (the second) person
+   * The current approach to the relation types is minimal on purpose:
+   ** The first implementation is more straightforward in terms of data errors detection with such
+      a simple model
+   ** The need to add less common relations (same-sex partnerships, child adoption, etc.) is
       recognized but planned as an extension when the basic functionality works. */
 func validateRelation(r relationRecord) (bool, error) {
 	p1, found, err := getPerson(r.Pid1)

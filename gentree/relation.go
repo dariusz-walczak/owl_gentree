@@ -17,7 +17,7 @@ type relationPayload struct {
 
 /* Create a relation record from a payload struct
 
-   Used by request handlers when communicating with the storage backend.
+   This function is used by request handlers when communicating with the storage backend.
 
    Returns:
    * relation record (used for interaction with the storage backend) */
@@ -27,7 +27,8 @@ func (p *relationPayload) toRelationRecord() relationRecord {
 
 /* Convert a relation record to payload data
 
-   Used by request handlers when responding with data provided by the storage backend.
+   This function is used by request handlers when responding with data provided by the storage
+   backend.
 
    Returns:
    * relation payload */
@@ -37,7 +38,8 @@ func (r *relationRecord) toPayload() relationPayload {
 
 /* Convert a list of relation records to payload data
 
-   Used by request handlers when responding with data provided by the storage backend.
+   This function is used by request handlers when responding with data provided by the storage
+   backend.
 
    Returns:
    * slice of relation payload structures */
@@ -62,7 +64,7 @@ type itRelationPayload struct {
 
 /* Create a relation record from a payload struct
 
-   Used by request handlers when communicating with the storage backend.
+   This function is used by request handlers when communicating with the storage backend.
 
    Params:
    * sourcePid - id of the relation source person (not included in the payload) */
@@ -81,19 +83,19 @@ type iitRelationPayload struct {
 
 /* Create a relation record from a payload struct
 
-   Used by request handlers when communicating with the storage backend. */
+   This function is used by request handlers when communicating with the storage backend. */
 func (p *iitRelationPayload) toRelationRecord() relationRecord {
 	return relationRecord{0, p.Pid1, p.Pid2, p.Type}
 }
 
-/* Structure used to extract relation id from an URI */
+/* The structure used to extract relation id from a URI */
 type specifyRelationUri struct {
 	Rid int64 `uri:"rid" binding:"required"`
 }
 
 /* Lower level, shared implementation of the create relation handlers
 
-   The upper level handlers are adapters taking relation record parameters from different
+   The upper-level handlers are adapters taking relation record parameters from different
    sources and passing them to this function */
 func doCreateRelation(c *gin.Context, relation relationRecord) {
 	log.Trace("Entry checkpoint")
@@ -155,7 +157,7 @@ func doCreateRelation(c *gin.Context, relation relationRecord) {
 
 /* Handle a create relation request
 
-   All the required data is expected in the request payload (iitRelationPayload) */
+   The function will retrieve all the input data from the request payload (iitRelationPayload) */
 func createRelation(c *gin.Context) {
 	log.Trace("Entry checkpoint")
 
@@ -173,8 +175,8 @@ func createRelation(c *gin.Context) {
 
 /* Handle a create relation request
 
-   The source person id is expected to be a part of the URI (specifyPersonUri). The rest of the
-   data is expected in the request payload (itRelationPayload) */
+   The function will retrieve the source person id from the request URI (specifyPersonUri), and the
+   rest of the data from the request payload (itRelationPayload) */
 func createPersonRelation(c *gin.Context) {
 	log.Trace("Entry checkpoint")
 
@@ -201,7 +203,7 @@ func createPersonRelation(c *gin.Context) {
 
 /* Retrieve a relation
 
-   The relation id is expected to be a part of the URI (specifyRelationUri) */
+   The function will extract the relation id from the request URI (specifyRelationUri) */
 func retrieveRelation(c *gin.Context) {
 	log.Trace("Entry checkpoint")
 
@@ -230,9 +232,9 @@ func retrieveRelation(c *gin.Context) {
 	log.Infof("Found the requested relation record (%d)", params.Rid)
 }
 
-/* Retrieve all the relations of given person
+/* Retrieve all the relations of the given person
 
-   The person id is expected to be a part of the URI (specifyPersonUri). */
+   The function will extract the person id from the request URI (specifyPersonUri) */
 func retrievePersonRelations(c *gin.Context) {
 	log.Trace("Entry checkpoint")
 
