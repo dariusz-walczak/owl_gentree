@@ -25,16 +25,22 @@ func (p *relationPayload) toRelationRecord() relationRecord {
 	return relationRecord{p.Id, p.Pid1, p.Pid2, p.Type}
 }
 
-/* Create a relation payload from a relation record
+/* Convert a relation record to payload data
 
    Used by request handlers when responding with data provided by the storage backend.
 
    Returns:
-   * relation payload (used as request response to be marshalled) */
+   * relation payload */
 func (r *relationRecord) toPayload() relationPayload {
 	return relationPayload{r.Id, r.Pid1, r.Pid2, r.Type}
 }
 
+/* Convert a list of relation records to payload data
+
+   Used by request handlers when responding with data provided by the storage backend.
+
+   Returns:
+   * slice of relation payload structures */
 func (relations relationList) toPayload() []relationPayload {
 	payload := make([]relationPayload, 0, len(relations))
 
@@ -45,7 +51,9 @@ func (relations relationList) toPayload() []relationPayload {
 	return payload
 }
 
-/* Relation payload accepted by the createPersonRelation handler */
+/* Relation payload accepted by the createPersonRelation handler
+
+   The 'it' prefix stands for "id and type" */
 type itRelationPayload struct {
 	// Target person identifier
 	Pid  string `json:"pid" binding:"required,alphanum|uuid"`
@@ -62,7 +70,9 @@ func (p *itRelationPayload) toRelationRecord(sourcePid string) relationRecord {
 	return relationRecord{0, sourcePid, p.Pid, p.Type}
 }
 
-/* Relation payload accepted by the createRelation handler */
+/* Relation payload accepted by the createRelation handler
+
+   The 'iit' prefix stands for "id, id, and type" */
 type iitRelationPayload struct {
 	Pid1 string `json:"pid1" binding:"required,alphanum|uuid"`
 	Pid2 string `json:"pid2" binding:"required,alphanum|uuid"`
