@@ -6,6 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"net/http"
+	"net/url"
+	"strconv"
 )
 
 type relationPayload struct {
@@ -91,6 +93,22 @@ func (p *iitRelationPayload) toRelationRecord() relationRecord {
 /* The structure used to extract relation id from a URI */
 type specifyRelationUri struct {
 	Rid int64 `uri:"rid" binding:"required"`
+}
+
+type paginationQuery struct {
+	Page  int `form:"page" binding:"min=0"`
+	Limit int `form:"limit" binding:"isdefault|min=2,max=100"`
+}
+
+func (p *paginationQuery) toPaginationData() paginationData {
+	// Apply defaults:
+	pageSize := p.Limit
+
+	if pageSize == 0 {
+		pageSize = 20
+	}
+
+	return paginationData{p.Page, pageSize, 0}
 }
 
 /* Lower level, shared implementation of the create relation handlers
@@ -246,15 +264,13 @@ func retrievePersonRelations(c *gin.Context) {
 		return
 	}
 
-	var pagination pagePaginationQuery
+	var pagQuery paginationQuery
 
-	if err := c.ShouldBindQuery(&pagination); err != nil {
+	if err := c.ShouldBindQuery(&pagQuery); err != nil {
 		log.Infof("Query parameters unmarshalling error: %s", err)
 		c.JSON(http.StatusBadRequest, gin.H{"message": queryErrorMsg})
 		return
 	}
-
-	pagination.applyDefaults()
 
 	if _, found, err := getPerson(params.Pid); !found {
 		log.Infof("The person with given id (%s) doesn't exist", params.Pid)
@@ -266,7 +282,7 @@ func retrievePersonRelations(c *gin.Context) {
 		return
 	}
 
-	relations, err := queryRelationsByPerson(params.Pid, pagination.Page, pagination.Limit)
+	relations, pagData, err := queryRelationsByPerson(params.Pid, pagQuery.toPaginationData())
 
 	if err != nil {
 		log.Errorf("An error occurred during relations retrieval attempt (%s)", err)
@@ -274,7 +290,19 @@ func retrievePersonRelations(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, relations.toPayload())
+	reqUrl := location.Get(c)
+	reqUrl.Path = fmt.Sprintf("/people/%s/relations", params.Pid)
+	query := url.Values{}
+	query.Add("page", strconv.Itoa(pagData.PageIdx+1))
+	query.Add("limit", strconv.Itoa(pagData.PageSize))
+	reqUrl.RawQuery = query.Encode()
+
+	c.JSON(http.StatusOK, gin.H{
+		"pagination": gin.H{
+			"next_url": reqUrl.String(),
+		},
+		"records": relations.toPayload(),
+	})
 
 	log.Infof("Found %d relations for the requested person (%s)", len(relations), params.Pid)
 }

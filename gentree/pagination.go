@@ -2,36 +2,40 @@ package main
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin"
+	"net/url"
 )
-
-type pagePaginationQuery struct {
-	Page  int `form:"page" binding:"min=0"`
-	Limit int `form:"limit" binding:"isdefault|min=2,max=100"`
-}
-
-func (p *pagePaginationQuery) applyDefaults() {
-	if p.Limit == 0 {
-		p.Limit = 20
-	}
-}
 
 const (
 	minPageSize = 2
 	maxPageSize = 100
 )
 
-func checkPaginationParams(pageIdx int, pageSize int) error {
-	if pageIdx < 0 {
+type paginationData struct {
+	PageIdx  int
+	PageSize int
+	TotalCnt int
+}
+
+func (p *paginationData) getJson(baseUrl url.URL) gin.H {
+	//	prevPageIdx := maxInt(0, p.PageIdx-1)
+	//	nextPageIdx := 0
+
+	return gin.H{}
+}
+
+func (p *paginationData) validate() error {
+	if p.PageIdx < 0 {
 		return AppError{
 			errInvalidArgument,
-			fmt.Sprintf("The page index is negative (%d)", pageIdx)}
+			fmt.Sprintf("The page index is negative (%d)", p.PageIdx)}
 	}
 
-	if (pageSize < minPageSize) || (pageSize > maxPageSize) {
+	if (p.PageSize < minPageSize) || (p.PageSize > maxPageSize) {
 		return AppError{
 			errInvalidArgument,
 			fmt.Sprintf("The page size (%d) is out of bounds ([%d, %d])",
-				pageSize, minPageSize, maxPageSize)}
+				p.PageSize, minPageSize, maxPageSize)}
 	}
 
 	return nil

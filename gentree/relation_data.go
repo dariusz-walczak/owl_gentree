@@ -84,19 +84,18 @@ func queryRelationById(id int64) (relationRecord, bool, error) {
 
    Params:
    * pid - the person identifier
-   * pageIdx - the zero-based index of the results page to be returned (must be greater or equal to
-     zero)
-   * pageSize - the maximum size of the page to be returned (must be between minPageSize and
-     maxPageSize)
+   * pag - pagination data specifying the range of records to be returned
 
    Return:
    * slice of relation records (empty if an error occurred)
+   * updated pagination data (empty if an error occurred; copy of the pag parameter with the total
+     record count field updated otherwise)
    * error (if occurred and nil otherwise) */
-func queryRelationsByPerson(pid string, pageIdx int, pageSize int) (relationList, error) {
+func queryRelationsByPerson(pid string, pag paginationData) (relationList, paginationData, error) {
 	log.Debugf("Retrieving all the relations of given person (%s)", pid)
 
-	if err := checkPaginationParams(pageIdx, pageSize); err != nil {
-		return []relationRecord{}, err
+	if err := pag.validate(); err != nil {
+		return []relationRecord{}, paginationData{}, err
 	}
 
 	// Extract slice of all the values (relation records) of the relations map
@@ -108,10 +107,12 @@ func queryRelationsByPerson(pid string, pageIdx int, pageSize int) (relationList
 
 	sort.Slice(sorted, func(i, j int) bool { return sorted[i].Id < sorted[j].Id })
 
-	first := minInt(pageIdx*pageSize, len(sorted))
-	last := minInt((pageIdx+1)*pageSize, len(sorted))
+	first := minInt(pag.PageIdx*pag.PageSize, len(sorted))
+	last := minInt((pag.PageIdx+1)*pag.PageSize, len(sorted))
 
-	return sorted[first:last], nil
+	pag.TotalCnt = len(relations)
+
+	return sorted[first:last], pag, nil
 }
 
 func queryRelationsByData(pid1 string, typ string, pid2 string) ([]relationRecord, error) {
