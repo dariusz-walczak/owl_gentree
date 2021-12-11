@@ -2,56 +2,65 @@ package main
 
 import (
 	"fmt"
+	"github.com/gin-contrib/location"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 )
 
-// Possible gender values
-const (
-	gMale    = "male"
-	gFemale  = "female"
-	gUnknown = "unknown"
-)
-
-type personRecord struct {
+type personPayload struct {
 	Id      string `json:"id" binding:"required,alphanum|uuid"`
 	Given   string `json:"given_names"`
 	Surname string `json:"surname"`
 	Gender  string `json:"gender" binding:"isdefault|oneof=male female unknown"`
 }
 
-var people = map[string]personRecord{}
+func (p *personPayload) toRecord() personRecord {
+	gender := p.Gender
 
-/* Retrieve a person record by id
- * Returns:
- * * Person record structure (uninitialized if not found)
- * * Success flag (true if the record was found and false otherwise)
- * * Error (if occurred) */
-func getPerson(pid string) (personRecord, bool, error) {
-	log.Debugf("Retrieving person record by id (%s)", pid)
-
-	person, found := people[pid]
-
-	if !found {
-		log.Debugf("Person record (%s) not found", pid)
-
-		return person, false, nil
+	if gender == "" {
+		gender = gUnknown
 	}
 
-	return person, true, nil
+	return personRecord{p.Id, p.Given, p.Surname, gender}
 }
 
-func (p *personRecord) applyDefaults() {
-	if p.Gender == "" {
-		p.Gender = gUnknown
+type specifyPersonUri struct {
+	Pid string `uri:"pid" binding:"required,alphanum|uuid"`
+}
+
+/* Convert a person record to payload data
+
+   This function is used by request handlers when responding with data provided by the storage
+   backend.
+
+   Returns:
+   * relation payload */
+func (r *personRecord) toPayload() personPayload {
+	return personPayload{r.Id, r.Given, r.Surname, r.Gender}
+}
+
+/* Convert a list of person records to payload data
+
+   This function is used by request handlers when responding with data provided by the storage
+   backend.
+
+   Returns:
+   * slice of person payload structures */
+func (list personList) toPayload() []personPayload {
+	payload := make([]personPayload, 0, len(list))
+
+	for _, r := range list {
+		payload = append(payload, r.toPayload())
 	}
+
+	return payload
 }
 
 func createPerson(c *gin.Context) {
 	log.Trace("Entry checkpoint")
 
-	var person personRecord
+	var person personPayload
 
 	if err := c.ShouldBindJSON(&person); err != nil {
 		log.Infof("New person data unmarshalling error: %s", err)
@@ -74,16 +83,11 @@ func createPerson(c *gin.Context) {
 		return
 	}
 
-	person.applyDefaults()
-	people[person.Id] = person
+	people[person.Id] = person.toRecord()
 
 	c.JSON(http.StatusCreated, gin.H{"message": "ok"})
 
 	log.Infof("Created a new person (%s) record", person.Id)
-}
-
-type specifyPersonUri struct {
-	Pid string `uri:"pid" binding:"required,alphanum|uuid"`
 }
 
 func replacePerson(c *gin.Context) {
@@ -112,7 +116,7 @@ func replacePerson(c *gin.Context) {
 		return
 	}
 
-	var person personRecord
+	var person personPayload
 
 	if err := c.ShouldBindJSON(&person); err != nil {
 		log.Infof("Person data unmarshalling error: %s", err)
@@ -121,8 +125,7 @@ func replacePerson(c *gin.Context) {
 		return
 	}
 
-	person.applyDefaults()
-	people[person.Id] = person
+	people[person.Id] = person.toRecord()
 
 	c.JSON(http.StatusOK, gin.H{"message": "Person record replaced"})
 
@@ -155,9 +158,39 @@ func retrievePerson(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, person)
+	c.JSON(http.StatusOK, person.toPayload())
 
 	log.Infof("Found the requested person record (%s)", params.Pid)
+}
+
+func retrievePeople(c *gin.Context) {
+	log.Trace("Retrieving all the person records")
+
+	var pagQuery paginationQuery
+
+	if err := c.ShouldBindQuery(&pagQuery); err != nil {
+		log.Infof("Query parameters unmarshalling error: %s", err)
+		c.JSON(http.StatusBadRequest, gin.H{"message": queryErrorMsg})
+		return
+	}
+
+	people, pagData, err := queryPeople(pagQuery.toPaginationData())
+
+	if err != nil {
+		log.Errorf("An error occurred during people retrieval attempt (%s)", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"message": internalErrorMsg})
+		return
+	}
+
+	reqUrl := location.Get(c)
+	reqUrl.Path = "/people"
+
+	c.JSON(http.StatusOK, gin.H{
+		"pagination": pagData.getJson(*reqUrl),
+		"records":    people.toPayload(),
+	})
+
+	log.Infof("Found %d persons", len(relations))
 }
 
 func deletePerson(c *gin.Context) {

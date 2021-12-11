@@ -26,6 +26,7 @@ func main() {
 	r.Use(location.Default())
 
 	r.POST("/people", createPerson)
+	r.GET("/people", retrievePeople)
 	r.GET("/people/:pid", retrievePerson)
 	r.DELETE("/people/:pid", deletePerson)
 	r.PUT("/people/:pid", replacePerson)
