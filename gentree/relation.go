@@ -20,7 +20,7 @@ type relationPayload struct {
    This function is used by request handlers when communicating with the storage backend.
 
    Returns:
-   * relation record (used for interaction with the storage backend) */
+   * relation record */
 func (p *relationPayload) toRelationRecord() relationRecord {
 	return relationRecord{p.Id, p.Pid1, p.Pid2, p.Type}
 }

@@ -8,6 +8,7 @@ import (
 	"net/http"
 )
 
+/* Intermediate structure used to bind person payload and respond with person data */
 type personPayload struct {
 	Id      string `json:"id" binding:"required,alphanum|uuid"`
 	Given   string `json:"given_names"`
@@ -15,6 +16,12 @@ type personPayload struct {
 	Gender  string `json:"gender" binding:"isdefault|oneof=male female unknown"`
 }
 
+/* Create a person record from a person payload
+
+   This function is used by request handlers when communicating with the storage backend
+
+   Returns:
+   * person record */
 func (p *personPayload) toRecord() personRecord {
 	gender := p.Gender
 
@@ -25,11 +32,7 @@ func (p *personPayload) toRecord() personRecord {
 	return personRecord{p.Id, p.Given, p.Surname, gender}
 }
 
-type specifyPersonUri struct {
-	Pid string `uri:"pid" binding:"required,alphanum|uuid"`
-}
-
-/* Convert a person record to payload data
+/* Convert a person record to person payload
 
    This function is used by request handlers when responding with data provided by the storage
    backend.
@@ -40,7 +43,7 @@ func (r *personRecord) toPayload() personPayload {
 	return personPayload{r.Id, r.Given, r.Surname, r.Gender}
 }
 
-/* Convert a list of person records to payload data
+/* Convert a list of person records to payload
 
    This function is used by request handlers when responding with data provided by the storage
    backend.
@@ -57,6 +60,14 @@ func (list personList) toPayload() []personPayload {
 	return payload
 }
 
+/* A structure used to extract person identifier from a URI */
+type specifyPersonUri struct {
+	Pid string `uri:"pid" binding:"required,alphanum|uuid"`
+}
+
+/* Handle a create person request
+
+   The function will retrieve all the input data from the request payload (personPayload) */
 func createPerson(c *gin.Context) {
 	log.Trace("Entry checkpoint")
 
@@ -90,6 +101,10 @@ func createPerson(c *gin.Context) {
 	log.Infof("Created a new person (%s) record", person.Id)
 }
 
+/* Handle a replace person request
+
+   The function will extract the person id from the request URI (specifyPersonUri), and the rest of
+   the data from the request payload (personPayload) */
 func replacePerson(c *gin.Context) {
 	log.Trace("Entry checkpoint")
 
@@ -132,6 +147,9 @@ func replacePerson(c *gin.Context) {
 	log.Infof("Replaced the person (%s) record", person.Id)
 }
 
+/* Handle a retrieva person request
+
+   The function will extract the person id from the request URI (specifyPersonUri) */
 func retrievePerson(c *gin.Context) {
 	log.Trace("Entry checkpoint")
 
@@ -163,6 +181,7 @@ func retrievePerson(c *gin.Context) {
 	log.Infof("Found the requested person record (%s)", params.Pid)
 }
 
+/* Handle a retrieve all people request */
 func retrievePeople(c *gin.Context) {
 	log.Trace("Retrieving all the person records")
 
@@ -193,6 +212,9 @@ func retrievePeople(c *gin.Context) {
 	log.Infof("Found %d persons", len(relations))
 }
 
+/* Handle a delete person request
+
+   The function will extract the person id from the request URI (specifyPersonUri) */
 func deletePerson(c *gin.Context) {
 	log.Trace("Entry checkpoint")
 

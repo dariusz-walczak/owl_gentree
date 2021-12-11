@@ -12,11 +12,12 @@ const (
 	gUnknown = "unknown"
 )
 
+/* Storage representation of a person */
 type personRecord struct {
-	Id      string `json:"id" binding:"required,alphanum|uuid"`
-	Given   string `json:"given_names"`
-	Surname string `json:"surname"`
-	Gender  string `json:"gender" binding:"isdefault|oneof=male female unknown"`
+	Id      string
+	Given   string
+	Surname string
+	Gender  string
 }
 
 type personList []personRecord
