@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 	"net/url"
+	"strconv"
 )
 
 const (
@@ -17,11 +19,31 @@ type paginationData struct {
 	TotalCnt int
 }
 
-func (p *paginationData) getJson(baseUrl url.URL) gin.H {
-	//	prevPageIdx := maxInt(0, p.PageIdx-1)
-	//	nextPageIdx := 0
+func composePageUrl(baseUrl url.URL, pageIdx int, pageSize int) string {
+	query := baseUrl.Query()
+	query.Set("page", strconv.Itoa(pageIdx))
+	query.Set("limit", strconv.Itoa(pageSize))
+	baseUrl.RawQuery = query.Encode()
 
-	return gin.H{}
+	return baseUrl.String()
+}
+
+func (p *paginationData) getJson(baseUrl url.URL) gin.H {
+	log.Trace("Entry checkpoint")
+
+	json := gin.H{}
+
+	if p.PageIdx-1 >= 0 {
+		json["prev_url"] = composePageUrl(baseUrl, p.PageIdx-1, p.PageSize)
+	}
+
+	pageCnt := int(maxInt(p.TotalCnt-1, 0) / p.PageSize)
+
+	if p.PageIdx+1 <= pageCnt {
+		json["next_url"] = composePageUrl(baseUrl, p.PageIdx+1, p.PageSize)
+	}
+
+	return json
 }
 
 func (p *paginationData) validate() error {

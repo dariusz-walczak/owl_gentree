@@ -6,8 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"net/http"
-	"net/url"
-	"strconv"
 )
 
 type relationPayload struct {
@@ -292,16 +290,10 @@ func retrievePersonRelations(c *gin.Context) {
 
 	reqUrl := location.Get(c)
 	reqUrl.Path = fmt.Sprintf("/people/%s/relations", params.Pid)
-	query := url.Values{}
-	query.Add("page", strconv.Itoa(pagData.PageIdx+1))
-	query.Add("limit", strconv.Itoa(pagData.PageSize))
-	reqUrl.RawQuery = query.Encode()
 
 	c.JSON(http.StatusOK, gin.H{
-		"pagination": gin.H{
-			"next_url": reqUrl.String(),
-		},
-		"records": relations.toPayload(),
+		"pagination": pagData.getJson(*reqUrl),
+		"records":    relations.toPayload(),
 	})
 
 	log.Infof("Found %d relations for the requested person (%s)", len(relations), params.Pid)
