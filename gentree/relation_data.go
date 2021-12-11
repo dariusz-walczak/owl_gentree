@@ -82,8 +82,10 @@ func queryRelationById(id int64) (relationRecord, bool, error) {
 
 /* Query all the relation records associated with the given person
 
+   All the existing records will be returned if the person identifier is an empty string
+
    Params:
-   * pid - the person identifier
+   * pid - the person identifier (ignored if it is an empty string)
    * pag - pagination data specifying the range of records to be returned
 
    Return:
@@ -102,7 +104,9 @@ func queryRelationsByPerson(pid string, pag paginationData) (relationList, pagin
 	sorted := make(relationList, 0, len(relations))
 
 	for _, r := range relations {
-		sorted = append(sorted, r)
+		if (r.Pid1 == pid) || (r.Pid2 == pid) || (pid == "") {
+			sorted = append(sorted, r)
+		}
 	}
 
 	sort.Slice(sorted, func(i, j int) bool { return sorted[i].Id < sorted[j].Id })

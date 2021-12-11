@@ -248,6 +248,37 @@ func retrieveRelation(c *gin.Context) {
 	log.Infof("Found the requested relation record (%d)", params.Rid)
 }
 
+/* Retrieve all the existing relations */
+func retrieveRelations(c *gin.Context) {
+	log.Trace("Entry checkpoint")
+
+	var pagQuery paginationQuery
+
+	if err := c.ShouldBindQuery(&pagQuery); err != nil {
+		log.Infof("Query parameters unmarshalling error: %s", err)
+		c.JSON(http.StatusBadRequest, gin.H{"message": queryErrorMsg})
+		return
+	}
+
+	relations, pagData, err := queryRelationsByPerson("", pagQuery.toPaginationData())
+
+	if err != nil {
+		log.Errorf("An error occurred during relations retrieval attempt (%s)", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"message": internalErrorMsg})
+		return
+	}
+
+	reqUrl := location.Get(c)
+	reqUrl.Path = "/relations"
+
+	c.JSON(http.StatusOK, gin.H{
+		"pagination": pagData.getJson(*reqUrl),
+		"records":    relations.toPayload(),
+	})
+
+	log.Infof("Found %d relations", len(relations))
+}
+
 /* Retrieve all the relations of the given person
 
    The function will extract the person id from the request URI (specifyPersonUri) */

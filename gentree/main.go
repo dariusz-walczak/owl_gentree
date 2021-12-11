@@ -31,6 +31,7 @@ func main() {
 	r.PUT("/people/:pid", replacePerson)
 
 	r.POST("/relations", createRelation)
+	r.GET("/relations", retrieveRelations)
 	r.GET("/relations/:rid", retrieveRelation)
 	r.POST("/people/:pid/relations", createPersonRelation)
 	r.GET("/people/:pid/relations", retrievePersonRelations)
