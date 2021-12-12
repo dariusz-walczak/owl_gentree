@@ -109,6 +109,20 @@ func (p *paginationQuery) toPaginationData() paginationData {
 	return paginationData{p.Page, pageSize, 0}
 }
 
+/* Compose an URL allowing retrieval of the given relation
+
+   Params:
+   * c - gin context
+   * rid - the relation identifier
+
+   Return:
+   * URL string */
+func makeRetrieveRelationUrl(c *gin.Context, rid int64) string {
+	u := location.Get(c)
+	u.Path = fmt.Sprintf("/relations/%d", rid)
+	return u.String()
+}
+
 /* Lower level, shared implementation of the create relation handlers
 
    The upper-level handlers are adapters taking relation record parameters from different
@@ -116,14 +130,18 @@ func (p *paginationQuery) toPaginationData() paginationData {
 func doCreateRelation(c *gin.Context, relation relationRecord) {
 	log.Trace("Entry checkpoint")
 
-	if _, found, err := queryRelationByData(relation.Pid1, relation.Type, relation.Pid2); found {
+	if existing, found, err := queryRelationByData(relation.Pid1, relation.Type, relation.Pid2); found {
 		log.Infof(
 			"A relation (%d) matching given attributes (%s, %s, %s) already exists",
-			relation.Id, relation.Pid1, relation.Type, relation.Pid2)
+			existing.Id, existing.Pid1, existing.Type, existing.Pid2)
 		c.JSON(
 			http.StatusBadRequest,
-			gin.H{"message": fmt.Sprintf("Relation (%s, %s, %s) already exists",
-				relation.Pid1, relation.Type, relation.Pid2)})
+			gin.H{
+				"message": fmt.Sprintf("Relation (%s, %s, %s) already exists",
+					existing.Pid1, existing.Type, existing.Pid2),
+				"location": makeRetrieveRelationUrl(c, existing.Id),
+			})
+
 		return
 	} else if err != nil {
 		log.Infof("An error occurred during the relation retrieval attempt (%s)", err)
@@ -162,10 +180,7 @@ func doCreateRelation(c *gin.Context, relation relationRecord) {
 	relation.Id = id
 	relations[id] = relation
 
-	url := location.Get(c)
-	url.Path = fmt.Sprintf("/relations/%d", id)
-
-	c.Header("Location", url.String())
+	c.Header("Location", makeRetrieveRelationUrl(c, id))
 	c.JSON(http.StatusCreated, gin.H{"message": "ok"})
 
 	log.Infof("Created a new relation (%d) record", relation.Id)
