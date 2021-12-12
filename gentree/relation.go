@@ -95,7 +95,7 @@ type specifyRelationUri struct {
 
 type paginationQuery struct {
 	Page  int `form:"page" binding:"min=0"`
-	Limit int `form:"limit" binding:"isdefault|min=2,max=100"`
+	Limit int `form:"limit" binding:"isdefault|min=10,max=100"`
 }
 
 func (p *paginationQuery) toPaginationData() paginationData {
