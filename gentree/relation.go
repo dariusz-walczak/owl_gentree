@@ -106,7 +106,7 @@ func (p *paginationQuery) toPaginationData() paginationData {
 		pageSize = 20
 	}
 
-	return paginationData{p.Page, pageSize, 0}
+	return paginationData{p.Page, pageSize, 0, minPageSize, maxPageSize}
 }
 
 /* Compose an URL allowing retrieval of the given relation

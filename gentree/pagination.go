@@ -17,6 +17,8 @@ type paginationData struct {
 	PageIdx  int
 	PageSize int
 	TotalCnt int
+	minPageSize int
+	maxPageSize int
 }
 
 func composePageUrl(baseUrl url.URL, pageIdx int, pageSize int) string {
@@ -53,11 +55,11 @@ func (p *paginationData) validate() error {
 			fmt.Sprintf("The page index is negative (%d)", p.PageIdx)}
 	}
 
-	if (p.PageSize < minPageSize) || (p.PageSize > maxPageSize) {
+	if (p.PageSize < p.minPageSize) || (p.PageSize > p.maxPageSize) {
 		return AppError{
 			errInvalidArgument,
 			fmt.Sprintf("The page size (%d) is out of bounds ([%d, %d])",
-				p.PageSize, minPageSize, maxPageSize)}
+				p.PageSize, p.minPageSize, p.maxPageSize)}
 	}
 
 	return nil
