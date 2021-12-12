@@ -65,6 +65,20 @@ type specifyPersonUri struct {
 	Pid string `uri:"pid" binding:"required,alphanum|uuid"`
 }
 
+/* Compose an URL allowing retrieval of the given person
+
+   Params:
+   * c - gin context
+   * pid - the person identifier
+
+   Return:
+   * URL string */
+func makeRetrievePersonUrl(c *gin.Context, pid string) string {
+	u := location.Get(c)
+	u.Path = fmt.Sprintf("/people/%s", pid)
+	return u.String()
+}
+
 /* Handle a create person request
 
    The function will retrieve all the input data from the request payload (personPayload) */
@@ -85,7 +99,10 @@ func createPerson(c *gin.Context) {
 
 		c.JSON(
 			http.StatusBadRequest,
-			gin.H{"message": fmt.Sprintf("Person (%s) already exists", person.Id)})
+			gin.H{
+				"message":  fmt.Sprintf("Person (%s) already exists", person.Id),
+				"location": makeRetrievePersonUrl(c, person.Id),
+			})
 		return
 	} else if err != nil {
 		log.Errorf("An error occurred during the person retrieval attempt (%s)", err)
@@ -96,10 +113,7 @@ func createPerson(c *gin.Context) {
 
 	people[person.Id] = person.toRecord()
 
-	url := location.Get(c)
-	url.Path = fmt.Sprintf("/people/%s", person.Id)
-
-	c.Header("Location", url.String())
+	c.Header("Location", makeRetrievePersonUrl(c, person.Id))
 	c.JSON(http.StatusCreated, gin.H{"message": "ok"})
 
 	log.Infof("Created a new person (%s) record", person.Id)
