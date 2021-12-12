@@ -96,6 +96,10 @@ func createPerson(c *gin.Context) {
 
 	people[person.Id] = person.toRecord()
 
+	url := location.Get(c)
+	url.Path = fmt.Sprintf("/people/%s", person.Id)
+
+	c.Header("Location", url.String())
 	c.JSON(http.StatusCreated, gin.H{"message": "ok"})
 
 	log.Infof("Created a new person (%s) record", person.Id)
