@@ -61,9 +61,9 @@ func TestQueryPeopleEmpty(t *testing.T) {
 
 	list, pagResult, err := queryPeople(
 		paginationData{
-			PageIdx: 0,
-			PageSize: 10,
-			TotalCnt: -1, // Should be ignored and overridden by the queryPeople function
+			PageIdx:     0,
+			PageSize:    10,
+			TotalCnt:    -1, // Should be ignored and overridden by the queryPeople function
 			minPageSize: 10,
 			maxPageSize: 10})
 
@@ -81,9 +81,9 @@ func TestQueryPeoplePaging(t *testing.T) {
 
 	list, pagResult, err := queryPeople(
 		paginationData{
-			PageIdx: 0,
-			PageSize: 2,
-			TotalCnt: -1, // Should be ignored and overridden by the queryPeople function
+			PageIdx:     0,
+			PageSize:    2,
+			TotalCnt:    -1, // Should be ignored and overridden by the queryPeople function
 			minPageSize: 2,
 			maxPageSize: 2})
 
@@ -96,9 +96,9 @@ func TestQueryPeoplePaging(t *testing.T) {
 
 	list, pagResult, err = queryPeople(
 		paginationData{
-			PageIdx: 1,
-			PageSize: 2,
-			TotalCnt: -1, // Should be ignored and overridden by the queryPeople function
+			PageIdx:     1,
+			PageSize:    2,
+			TotalCnt:    -1, // Should be ignored and overridden by the queryPeople function
 			minPageSize: 2,
 			maxPageSize: 2})
 
@@ -112,9 +112,9 @@ func TestQueryPeoplePaging(t *testing.T) {
 
 	list, pagResult, err = queryPeople(
 		paginationData{
-			PageIdx: 0,
-			PageSize: 2,
-			TotalCnt: -1, // Should be ignored and overridden by the queryPeople function
+			PageIdx:     0,
+			PageSize:    2,
+			TotalCnt:    -1, // Should be ignored and overridden by the queryPeople function
 			minPageSize: 2,
 			maxPageSize: 2})
 
@@ -128,9 +128,9 @@ func TestQueryPeoplePaging(t *testing.T) {
 
 	list, pagResult, err = queryPeople(
 		paginationData{
-			PageIdx: 1,
-			PageSize: 2,
-			TotalCnt: -1, // Should be ignored and overridden by the queryPeople function
+			PageIdx:     1,
+			PageSize:    2,
+			TotalCnt:    -1, // Should be ignored and overridden by the queryPeople function
 			minPageSize: 2,
 			maxPageSize: 2})
 
@@ -144,9 +144,9 @@ func TestQueryPeoplePaging(t *testing.T) {
 
 	list, pagResult, err = queryPeople(
 		paginationData{
-			PageIdx: 0,
-			PageSize: 2,
-			TotalCnt: -1, // Should be ignored and overridden by the queryPeople function
+			PageIdx:     0,
+			PageSize:    2,
+			TotalCnt:    -1, // Should be ignored and overridden by the queryPeople function
 			minPageSize: 2,
 			maxPageSize: 2})
 
@@ -160,9 +160,9 @@ func TestQueryPeoplePaging(t *testing.T) {
 
 	list, pagResult, err = queryPeople(
 		paginationData{
-			PageIdx: 1,
-			PageSize: 2,
-			TotalCnt: -1, // Should be ignored and overridden by the queryPeople function
+			PageIdx:     1,
+			PageSize:    2,
+			TotalCnt:    -1, // Should be ignored and overridden by the queryPeople function
 			minPageSize: 2,
 			maxPageSize: 2})
 
@@ -175,9 +175,9 @@ func TestQueryPeoplePaging(t *testing.T) {
 
 	list, pagResult, err = queryPeople(
 		paginationData{
-			PageIdx: 2,
-			PageSize: 2,
-			TotalCnt: -1, // Should be ignored and overridden by the queryPeople function
+			PageIdx:     2,
+			PageSize:    2,
+			TotalCnt:    -1, // Should be ignored and overridden by the queryPeople function
 			minPageSize: 2,
 			maxPageSize: 2})
 
@@ -192,9 +192,9 @@ func TestQueryPeoplePaging(t *testing.T) {
 
 	list, pagResult, err = queryPeople(
 		paginationData{
-			PageIdx: 0,
-			PageSize: 2,
-			TotalCnt: -1, // Should be ignored and overridden by the queryPeople function
+			PageIdx:     0,
+			PageSize:    2,
+			TotalCnt:    -1, // Should be ignored and overridden by the queryPeople function
 			minPageSize: 2,
 			maxPageSize: 2})
 
@@ -208,9 +208,9 @@ func TestQueryPeoplePaging(t *testing.T) {
 
 	list, pagResult, err = queryPeople(
 		paginationData{
-			PageIdx: 1,
-			PageSize: 2,
-			TotalCnt: -1, // Should be ignored and overridden by the queryPeople function
+			PageIdx:     1,
+			PageSize:    2,
+			TotalCnt:    -1, // Should be ignored and overridden by the queryPeople function
 			minPageSize: 2,
 			maxPageSize: 2})
 
@@ -224,9 +224,9 @@ func TestQueryPeoplePaging(t *testing.T) {
 
 	list, pagResult, err = queryPeople(
 		paginationData{
-			PageIdx: 2,
-			PageSize: 2,
-			TotalCnt: -1, // Should be ignored and overridden by the queryPeople function
+			PageIdx:     2,
+			PageSize:    2,
+			TotalCnt:    -1, // Should be ignored and overridden by the queryPeople function
 			minPageSize: 2,
 			maxPageSize: 2})
 
@@ -237,4 +237,57 @@ func TestQueryPeoplePaging(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-// negative page idx, too big page idx, invalid page size
+func TestQueryPeopleValidation(t *testing.T) {
+	people = map[string]personRecord{
+		"P01": personRecord{"P01", "Anna", "Kowalska", gFemale},
+		"P02": personRecord{"P02", "Błażej", "Czerwiński", gMale},
+		"P03": personRecord{"P03", "Bianka", "Wysocka", gFemale},
+	}
+
+	// Page index smaller than 0:
+	list, pagResult, err := queryPeople(
+		paginationData{
+			PageIdx:     -1,
+			PageSize:    2,
+			TotalCnt:    -1,
+			minPageSize: 2,
+			maxPageSize: 2})
+
+	assert.Len(t, list, 0)
+	assert.Empty(t, pagResult.PageIdx)
+	assert.Empty(t, pagResult.PageSize)
+	assert.Empty(t, pagResult.TotalCnt)
+	assert.ErrorIs(t, err, AppError{errInvalidArgument, "The page index is negative (-1)"})
+
+	// Page size smaller than the minimum
+	list, pagResult, err = queryPeople(
+		paginationData{
+			PageIdx:     0,
+			PageSize:    2,
+			TotalCnt:    -1,
+			minPageSize: 10,
+			maxPageSize: 100})
+
+	assert.Len(t, list, 0)
+	assert.Empty(t, pagResult.PageIdx)
+	assert.Empty(t, pagResult.PageSize)
+	assert.Empty(t, pagResult.TotalCnt)
+	assert.ErrorIs(
+		t, err, AppError{errInvalidArgument, "The page size (2) is out of bounds ([10, 100])"})
+
+	// Page size greater than the maximum
+	list, pagResult, err = queryPeople(
+		paginationData{
+			PageIdx:     0,
+			PageSize:    200,
+			TotalCnt:    -1,
+			minPageSize: 50,
+			maxPageSize: 90})
+
+	assert.Len(t, list, 0)
+	assert.Empty(t, pagResult.PageIdx)
+	assert.Empty(t, pagResult.PageSize)
+	assert.Empty(t, pagResult.TotalCnt)
+	assert.ErrorIs(
+		t, err, AppError{errInvalidArgument, "The page size (200) is out of bounds ([50, 90])"})
+}

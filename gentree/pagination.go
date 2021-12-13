@@ -14,9 +14,9 @@ const (
 )
 
 type paginationData struct {
-	PageIdx  int
-	PageSize int
-	TotalCnt int
+	PageIdx     int
+	PageSize    int
+	TotalCnt    int
 	minPageSize int
 	maxPageSize int
 }
