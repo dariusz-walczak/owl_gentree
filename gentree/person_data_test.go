@@ -30,7 +30,7 @@ func TestGetPerson(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestQueryPeople1(t *testing.T) {
+func TestQueryPeople1Simple(t *testing.T) {
 	people = map[string]personRecord{
 		"P02": personRecord{"P02", "Anna", "Nowak", gFemale},
 		"P04": personRecord{"P04", "Jagoda", "Szewczyk", gFemale},
@@ -55,3 +55,186 @@ func TestQueryPeople1(t *testing.T) {
 	assert.Equal(t, pagResult.TotalCnt, 6)
 	assert.Nil(t, err)
 }
+
+func TestQueryPeopleEmpty(t *testing.T) {
+	people = map[string]personRecord{}
+
+	list, pagResult, err := queryPeople(
+		paginationData{
+			PageIdx: 0,
+			PageSize: 10,
+			TotalCnt: -1, // Should be ignored and overridden by the queryPeople function
+			minPageSize: 10,
+			maxPageSize: 10})
+
+	assert.Len(t, list, 0)
+	assert.Equal(t, pagResult.PageIdx, 0)
+	assert.Equal(t, pagResult.PageSize, 10)
+	assert.Equal(t, pagResult.TotalCnt, 0)
+	assert.Nil(t, err)
+}
+
+func TestQueryPeoplePaging(t *testing.T) {
+	people = map[string]personRecord{
+		"P01": personRecord{"P01", "Anna", "Kowalska", gFemale},
+	}
+
+	list, pagResult, err := queryPeople(
+		paginationData{
+			PageIdx: 0,
+			PageSize: 2,
+			TotalCnt: -1, // Should be ignored and overridden by the queryPeople function
+			minPageSize: 2,
+			maxPageSize: 2})
+
+	assert.Len(t, list, 1)
+	assert.Equal(t, list[0].Id, "P01")
+	assert.Equal(t, pagResult.PageIdx, 0)
+	assert.Equal(t, pagResult.PageSize, 2)
+	assert.Equal(t, pagResult.TotalCnt, 1)
+	assert.Nil(t, err)
+
+	list, pagResult, err = queryPeople(
+		paginationData{
+			PageIdx: 1,
+			PageSize: 2,
+			TotalCnt: -1, // Should be ignored and overridden by the queryPeople function
+			minPageSize: 2,
+			maxPageSize: 2})
+
+	assert.Len(t, list, 0)
+	assert.Equal(t, pagResult.PageIdx, 1)
+	assert.Equal(t, pagResult.PageSize, 2)
+	assert.Equal(t, pagResult.TotalCnt, 1)
+	assert.Nil(t, err)
+
+	people["P03"] = personRecord{"P03", "Żaneta", "Rutkowska", gFemale}
+
+	list, pagResult, err = queryPeople(
+		paginationData{
+			PageIdx: 0,
+			PageSize: 2,
+			TotalCnt: -1, // Should be ignored and overridden by the queryPeople function
+			minPageSize: 2,
+			maxPageSize: 2})
+
+	assert.Len(t, list, 2)
+	assert.Equal(t, list[0].Id, "P01")
+	assert.Equal(t, list[1].Id, "P03")
+	assert.Equal(t, pagResult.PageIdx, 0)
+	assert.Equal(t, pagResult.PageSize, 2)
+	assert.Equal(t, pagResult.TotalCnt, 2)
+	assert.Nil(t, err)
+
+	list, pagResult, err = queryPeople(
+		paginationData{
+			PageIdx: 1,
+			PageSize: 2,
+			TotalCnt: -1, // Should be ignored and overridden by the queryPeople function
+			minPageSize: 2,
+			maxPageSize: 2})
+
+	assert.Len(t, list, 0)
+	assert.Equal(t, pagResult.PageIdx, 1)
+	assert.Equal(t, pagResult.PageSize, 2)
+	assert.Equal(t, pagResult.TotalCnt, 2)
+	assert.Nil(t, err)
+
+	people["P04"] = personRecord{"P04", "Anatol", "Chmielewski", gMale}
+
+	list, pagResult, err = queryPeople(
+		paginationData{
+			PageIdx: 0,
+			PageSize: 2,
+			TotalCnt: -1, // Should be ignored and overridden by the queryPeople function
+			minPageSize: 2,
+			maxPageSize: 2})
+
+	assert.Len(t, list, 2)
+	assert.Equal(t, list[0].Id, "P01")
+	assert.Equal(t, list[1].Id, "P03")
+	assert.Equal(t, pagResult.PageIdx, 0)
+	assert.Equal(t, pagResult.PageSize, 2)
+	assert.Equal(t, pagResult.TotalCnt, 3)
+	assert.Nil(t, err)
+
+	list, pagResult, err = queryPeople(
+		paginationData{
+			PageIdx: 1,
+			PageSize: 2,
+			TotalCnt: -1, // Should be ignored and overridden by the queryPeople function
+			minPageSize: 2,
+			maxPageSize: 2})
+
+	assert.Len(t, list, 1)
+	assert.Equal(t, list[0].Id, "P04")
+	assert.Equal(t, pagResult.PageIdx, 1)
+	assert.Equal(t, pagResult.PageSize, 2)
+	assert.Equal(t, pagResult.TotalCnt, 3)
+	assert.Nil(t, err)
+
+	list, pagResult, err = queryPeople(
+		paginationData{
+			PageIdx: 2,
+			PageSize: 2,
+			TotalCnt: -1, // Should be ignored and overridden by the queryPeople function
+			minPageSize: 2,
+			maxPageSize: 2})
+
+	assert.Len(t, list, 0)
+	assert.Equal(t, pagResult.PageIdx, 2)
+	assert.Equal(t, pagResult.PageSize, 2)
+	assert.Equal(t, pagResult.TotalCnt, 3)
+	assert.Nil(t, err)
+
+	// Note that the 'P02' identifier puts this record on the first page
+	people["P02"] = personRecord{"P02", "Michał", "Jasiński", gMale}
+
+	list, pagResult, err = queryPeople(
+		paginationData{
+			PageIdx: 0,
+			PageSize: 2,
+			TotalCnt: -1, // Should be ignored and overridden by the queryPeople function
+			minPageSize: 2,
+			maxPageSize: 2})
+
+	assert.Len(t, list, 2)
+	assert.Equal(t, list[0].Id, "P01")
+	assert.Equal(t, list[1].Id, "P02")
+	assert.Equal(t, pagResult.PageIdx, 0)
+	assert.Equal(t, pagResult.PageSize, 2)
+	assert.Equal(t, pagResult.TotalCnt, 4)
+	assert.Nil(t, err)
+
+	list, pagResult, err = queryPeople(
+		paginationData{
+			PageIdx: 1,
+			PageSize: 2,
+			TotalCnt: -1, // Should be ignored and overridden by the queryPeople function
+			minPageSize: 2,
+			maxPageSize: 2})
+
+	assert.Len(t, list, 2)
+	assert.Equal(t, list[0].Id, "P03")
+	assert.Equal(t, list[1].Id, "P04")
+	assert.Equal(t, pagResult.PageIdx, 1)
+	assert.Equal(t, pagResult.PageSize, 2)
+	assert.Equal(t, pagResult.TotalCnt, 4)
+	assert.Nil(t, err)
+
+	list, pagResult, err = queryPeople(
+		paginationData{
+			PageIdx: 2,
+			PageSize: 2,
+			TotalCnt: -1, // Should be ignored and overridden by the queryPeople function
+			minPageSize: 2,
+			maxPageSize: 2})
+
+	assert.Len(t, list, 0)
+	assert.Equal(t, pagResult.PageIdx, 2)
+	assert.Equal(t, pagResult.PageSize, 2)
+	assert.Equal(t, pagResult.TotalCnt, 4)
+	assert.Nil(t, err)
+}
+
+// negative page idx, too big page idx, invalid page size

@@ -9,5 +9,7 @@ RUN ["go", "get", "-u", "github.com/gin-contrib/location"]
 RUN ["go", "get", "-u", "github.com/stretchr/testify/assert"]
 RUN ["go", "get", "-u", "github.com/stretchr/testify/require"]
 
-COPY  gentree/*.go ./
-ENTRYPOINT ["go", "test", "-v", "."]
+COPY gentree/*.go ./
+COPY run_gentree_ut.sh ./
+ENTRYPOINT ["./run_gentree_ut.sh"]
+#ENTRYPOINT ["go", "test", "-v", "-cover", "."]

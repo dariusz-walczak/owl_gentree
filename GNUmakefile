@@ -14,4 +14,6 @@ gentree:
 
 run_ut:
 	sudo docker build -f run-unit-tests.Dockerfile --tag=${GENTREE_TEST_TAG} .
-	sudo docker run -it --rm ${GENTREE_TEST_TAG}
+	mkdir -p "$(shell pwd)/output"
+	sudo docker run --mount type=bind,source="$(shell pwd)/output",target=/output -it --rm ${GENTREE_TEST_TAG}
+	cd gentree && go tool cover -html=../output/gentree_cover.out -o ../output/cover.html
