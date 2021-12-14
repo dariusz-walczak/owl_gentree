@@ -12,16 +12,7 @@ func configLogger(args AppArgs) {
 	log.SetReportCaller(true)
 }
 
-func main() {
-	args, err := parseArgs()
-
-	if err != nil {
-		os.Exit(1)
-	}
-
-	configLogger(args)
-
-	log.Trace("Entry checkpoint")
+func setupRouter() *gin.Engine {
 	r := gin.Default()
 	r.Use(location.Default())
 
@@ -37,7 +28,23 @@ func main() {
 	r.POST("/people/:pid/relations", createPersonRelation)
 	r.GET("/people/:pid/relations", retrievePersonRelations)
 
-	if err := r.Run(); err != nil {
+	return r
+}
+
+func main() {
+	args, err := parseArgs()
+
+	if err != nil {
+		os.Exit(1)
+	}
+
+	configLogger(args)
+
+	log.Trace("Entry checkpoint")
+
+	router := setupRouter()
+
+	if err := router.Run(); err != nil {
 		log.Fatalf("An error occurred during the gin server run attempt (%s)", err)
 	}
 }

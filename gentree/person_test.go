@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/stretchr/testify/assert"
+	"net/http/httptest"
 	"testing"
 )
 
@@ -67,4 +68,14 @@ func TestPersonListToPayload(t *testing.T) {
 	assert.Equal(t, p[2].Given, "Zofia")
 	assert.Equal(t, p[2].Surname, "Krajewska")
 	assert.Equal(t, p[2].Gender, gFemale)
+}
+
+func TestRetrievePeopleRequest(t *testing.T) {
+	router := setupRouter()
+
+	res := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/people", nil)
+	router.ServeHTTP(res, req)
+
+	assert.Equal(t, res.Code, 200)
 }
