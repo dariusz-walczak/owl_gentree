@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -90,6 +91,97 @@ func TestPersonListToPayload(t *testing.T) {
 	assert.Equal(t, p[2].Given, "Zofia")
 	assert.Equal(t, p[2].Surname, "Krajewska")
 	assert.Equal(t, p[2].Gender, gFemale)
+}
+
+func TestCreatePersonRequestSuccess(t *testing.T) {
+	router := setupRouter()
+
+	people = map[string]personRecord{}
+
+	person1 := testPersonJson{
+		Id: "1",
+		Given: "Dorota Justyna",
+		Surname: "Zawadzka",
+		Gender: gFemale}
+
+	json1, err := json.Marshal(person1)
+	require.Nil(t, err)
+
+	res := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/people", bytes.NewBuffer(json1))
+	router.ServeHTTP(res, req)
+
+	assert.Equal(t, res.Code, http.StatusCreated)
+
+	require.True(t, json.Valid(res.Body.Bytes()))
+	responseData := testErrorJson{}
+	err = json.Unmarshal(res.Body.Bytes(), &responseData)
+	require.Nil(t, err)
+
+	assert.Equal(t, "ok", responseData.Message)
+	assert.Equal(t, "http://example.com/people/1", res.HeaderMap.Get("Location"))
+
+	assert.Len(t, people, 1)
+	assert.Equal(t, "1", people["1"].Id)
+	assert.Equal(t, "Dorota Justyna", people["1"].Given)
+	assert.Equal(t, "Zawadzka", people["1"].Surname)
+	assert.Equal(t, gFemale, people["1"].Gender)
+}
+
+/* Check if payload errors are correctly handled */
+func TestCreatePersonRequestPayload(t *testing.T) {
+	router := setupRouter()
+
+	people = map[string]personRecord{}
+
+	// Invalid gender field value:
+
+	person1 := testPersonJson{
+		Id: "1",
+		Given: "Dorota Justyna",
+		Surname: "Zawadzka",
+		Gender: "INVALID"}
+
+	json1, err := json.Marshal(person1)
+	require.Nil(t, err)
+
+	res := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/people", bytes.NewBuffer(json1))
+	router.ServeHTTP(res, req)
+
+	assert.Equal(t, res.Code, http.StatusBadRequest)
+
+	responseData := testErrorJson{}
+
+	require.True(t, json.Valid(res.Body.Bytes()))
+	err = json.Unmarshal(res.Body.Bytes(), &responseData)
+	require.Nil(t, err)
+
+	assert.Equal(t, payloadErrorMsg, responseData.Message)
+
+	// Id field not specified:
+
+	person2 := testPersonJson{
+		Given: "Antoni",
+		Surname: "Wiśniewski",
+		Gender: gMale}
+
+	json2, err := json.Marshal(person2)
+	require.Nil(t, err)
+
+	res = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/people", bytes.NewBuffer(json2))
+	router.ServeHTTP(res, req)
+
+	assert.Equal(t, res.Code, http.StatusBadRequest)
+
+	responseData = testErrorJson{}
+
+	require.True(t, json.Valid(res.Body.Bytes()))
+	err = json.Unmarshal(res.Body.Bytes(), &responseData)
+	require.Nil(t, err)
+
+	assert.Equal(t, payloadErrorMsg, responseData.Message)
 }
 
 /* Test if the retrieve people endpoint correctly deals with empty database */
