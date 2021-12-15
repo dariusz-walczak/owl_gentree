@@ -3,8 +3,10 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -22,8 +24,45 @@ type testPersonJson struct {
 	Gender  string `json:"gender"`
 }
 
+func testJsonBody(t *testing.T, payload interface{}) io.Reader {
+	strData, err := json.Marshal(payload)
+	require.Nil(t, err)
+	return bytes.NewBuffer(strData)
+}
+
+func testMakeRequest(router *gin.Engine, method string, url string, body io.Reader) *httptest.ResponseRecorder {
+	res := httptest.NewRecorder()
+	req := httptest.NewRequest(method, url, body)
+	router.ServeHTTP(res, req)
+
+	return res
+}
+
+func testJsonRes(t *testing.T, res *httptest.ResponseRecorder, payload interface{}) {
+	require.True(t, json.Valid(res.Body.Bytes()))
+	err := json.Unmarshal(res.Body.Bytes(), &payload)
+	require.Nil(t, err)
+}
+
 type testErrorJson struct {
 	Message string `json:"message"`
+}
+
+func testErrorRes(t *testing.T, res *httptest.ResponseRecorder) testErrorJson {
+	payload := testErrorJson{}
+	testJsonRes(t, res, &payload)
+	return payload
+}
+
+type testPersonListJson struct {
+	Pagination testPaginationJson `json:"pagination"`
+	Records    []testPersonJson   `json:"records"`
+}
+
+func testPersonListRes(t *testing.T, res *httptest.ResponseRecorder) testPersonListJson {
+	payload := testPersonListJson{}
+	testJsonRes(t, res, &payload)
+	return payload
 }
 
 /* Test the person payload to the person record conversion function */
@@ -98,27 +137,19 @@ func TestCreatePersonRequestSuccess(t *testing.T) {
 
 	people = map[string]personRecord{}
 
-	person1 := testPersonJson{
-		Id: "1",
-		Given: "Dorota Justyna",
+	person := testPersonJson{
+		Id:      "1",
+		Given:   "Dorota Justyna",
 		Surname: "Zawadzka",
-		Gender: gFemale}
+		Gender:  gFemale}
 
-	json1, err := json.Marshal(person1)
-	require.Nil(t, err)
-
-	res := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/people", bytes.NewBuffer(json1))
-	router.ServeHTTP(res, req)
+	res := testMakeRequest(router, "POST", "/people", testJsonBody(t, person))
 
 	assert.Equal(t, res.Code, http.StatusCreated)
 
-	require.True(t, json.Valid(res.Body.Bytes()))
-	responseData := testErrorJson{}
-	err = json.Unmarshal(res.Body.Bytes(), &responseData)
-	require.Nil(t, err)
+	resData := testErrorRes(t, res)
 
-	assert.Equal(t, "ok", responseData.Message)
+	assert.Equal(t, "ok", resData.Message)
 	assert.Equal(t, "http://example.com/people/1", res.HeaderMap.Get("Location"))
 
 	assert.Len(t, people, 1)
@@ -136,52 +167,34 @@ func TestCreatePersonRequestPayload(t *testing.T) {
 
 	// Invalid gender field value:
 
-	person1 := testPersonJson{
-		Id: "1",
-		Given: "Dorota Justyna",
-		Surname: "Zawadzka",
-		Gender: "INVALID"}
+	person := testPersonJson{
+		Id:      "1",
+		Given:   "Eliza",
+		Surname: "Wojciechowska",
+		Gender:  "INVALID"}
 
-	json1, err := json.Marshal(person1)
-	require.Nil(t, err)
-
-	res := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/people", bytes.NewBuffer(json1))
-	router.ServeHTTP(res, req)
+	res := testMakeRequest(router, "POST", "/people", testJsonBody(t, person))
 
 	assert.Equal(t, res.Code, http.StatusBadRequest)
 
-	responseData := testErrorJson{}
+	resData := testErrorRes(t, res)
 
-	require.True(t, json.Valid(res.Body.Bytes()))
-	err = json.Unmarshal(res.Body.Bytes(), &responseData)
-	require.Nil(t, err)
-
-	assert.Equal(t, payloadErrorMsg, responseData.Message)
+	assert.Equal(t, payloadErrorMsg, resData.Message)
 
 	// Id field not specified:
 
-	person2 := testPersonJson{
-		Given: "Antoni",
+	person = testPersonJson{
+		Given:   "Antoni",
 		Surname: "Wiśniewski",
-		Gender: gMale}
+		Gender:  gMale}
 
-	json2, err := json.Marshal(person2)
-	require.Nil(t, err)
-
-	res = httptest.NewRecorder()
-	req = httptest.NewRequest("POST", "/people", bytes.NewBuffer(json2))
-	router.ServeHTTP(res, req)
+	res = testMakeRequest(router, "POST", "/people", testJsonBody(t, person))
 
 	assert.Equal(t, res.Code, http.StatusBadRequest)
 
-	responseData = testErrorJson{}
+	resData = testErrorRes(t, res)
 
-	require.True(t, json.Valid(res.Body.Bytes()))
-	err = json.Unmarshal(res.Body.Bytes(), &responseData)
-	require.Nil(t, err)
-
-	assert.Equal(t, payloadErrorMsg, responseData.Message)
+	assert.Equal(t, payloadErrorMsg, resData.Message)
 }
 
 /* Test if the retrieve people endpoint correctly deals with empty database */
@@ -190,36 +203,20 @@ func TestRetrievePeopleRequestEmpty(t *testing.T) {
 
 	people = map[string]personRecord{}
 
-	res := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/people", nil)
-	router.ServeHTTP(res, req)
+	res := testMakeRequest(router, "GET", "/people", nil)
 
 	assert.Equal(t, res.Code, http.StatusOK)
 
-	type responseJson struct {
-		Pagination testPaginationJson `json:"pagination"`
-		Records    []testPersonJson   `json:"records"`
-	}
+	resData := testPersonListRes(t, res)
 
-	var responseData responseJson
-
-	require.True(t, json.Valid(res.Body.Bytes()))
-	err := json.Unmarshal(res.Body.Bytes(), &responseData)
-	require.Nil(t, err)
-
-	assert.Len(t, responseData.Records, 0)
-	assert.Empty(t, responseData.Pagination.NextUrl)
-	assert.Empty(t, responseData.Pagination.PrevUrl)
+	assert.Len(t, resData.Records, 0)
+	assert.Empty(t, resData.Pagination.NextUrl)
+	assert.Empty(t, resData.Pagination.PrevUrl)
 }
 
 /* Test if the retrieve people endpoint correctly handles result data pagination */
 func TestRetrievePeopleRequestPagination(t *testing.T) {
-	type responseJson struct {
-		Pagination testPaginationJson `json:"pagination"`
-		Records    []testPersonJson   `json:"records"`
-	}
-
-	var responseData responseJson
+	router := setupRouter()
 
 	people = map[string]personRecord{
 		"P01": personRecord{"P01", "Lidia", "Błaszczyk", gFemale},
@@ -237,105 +234,94 @@ func TestRetrievePeopleRequestPagination(t *testing.T) {
 		"P13": personRecord{"P13", "Natalia", "Ziółkowska", gFemale},
 	}
 
-	router := setupRouter()
-
 	// Request the first page:
 
-	res := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/people?limit=10&page=0", nil)
-	router.ServeHTTP(res, req)
+	res := testMakeRequest(router, "GET", "/people?limit=10&page=0", nil)
 
 	assert.Equal(t, res.Code, http.StatusOK)
 
-	require.True(t, json.Valid(res.Body.Bytes()))
-	err := json.Unmarshal(res.Body.Bytes(), &responseData)
-	require.Nil(t, err)
+	resData := testPersonListRes(t, res)
 
-	assert.Len(t, responseData.Records, 10)
-	assert.Equal(t, "P01", responseData.Records[0].Id)
-	assert.Equal(t, "Lidia", responseData.Records[0].Given)
-	assert.Equal(t, "Błaszczyk", responseData.Records[0].Surname)
-	assert.Equal(t, gFemale, responseData.Records[0].Gender)
+	assert.Len(t, resData.Records, 10)
+	assert.Equal(t, "P01", resData.Records[0].Id)
+	assert.Equal(t, "Lidia", resData.Records[0].Given)
+	assert.Equal(t, "Błaszczyk", resData.Records[0].Surname)
+	assert.Equal(t, gFemale, resData.Records[0].Gender)
 
-	assert.Equal(t, "P02", responseData.Records[1].Id)
-	assert.Equal(t, "Lara", responseData.Records[1].Given)
-	assert.Equal(t, "Szymańska", responseData.Records[1].Surname)
-	assert.Equal(t, gFemale, responseData.Records[1].Gender)
+	assert.Equal(t, "P02", resData.Records[1].Id)
+	assert.Equal(t, "Lara", resData.Records[1].Given)
+	assert.Equal(t, "Szymańska", resData.Records[1].Surname)
+	assert.Equal(t, gFemale, resData.Records[1].Gender)
 
-	assert.Equal(t, "P03", responseData.Records[2].Id)
-	assert.Equal(t, "Radosław", responseData.Records[2].Given)
-	assert.Equal(t, "Kołodziej", responseData.Records[2].Surname)
-	assert.Equal(t, gMale, responseData.Records[2].Gender)
+	assert.Equal(t, "P03", resData.Records[2].Id)
+	assert.Equal(t, "Radosław", resData.Records[2].Given)
+	assert.Equal(t, "Kołodziej", resData.Records[2].Surname)
+	assert.Equal(t, gMale, resData.Records[2].Gender)
 
-	assert.Equal(t, "P04", responseData.Records[3].Id)
-	assert.Equal(t, "Antonina", responseData.Records[3].Given)
-	assert.Equal(t, "Kozłowska", responseData.Records[3].Surname)
-	assert.Equal(t, gFemale, responseData.Records[3].Gender)
+	assert.Equal(t, "P04", resData.Records[3].Id)
+	assert.Equal(t, "Antonina", resData.Records[3].Given)
+	assert.Equal(t, "Kozłowska", resData.Records[3].Surname)
+	assert.Equal(t, gFemale, resData.Records[3].Gender)
 
-	assert.Equal(t, "P05", responseData.Records[4].Id)
-	assert.Equal(t, "Marcela", responseData.Records[4].Given)
-	assert.Equal(t, "Szymczak", responseData.Records[4].Surname)
-	assert.Equal(t, gFemale, responseData.Records[4].Gender)
+	assert.Equal(t, "P05", resData.Records[4].Id)
+	assert.Equal(t, "Marcela", resData.Records[4].Given)
+	assert.Equal(t, "Szymczak", resData.Records[4].Surname)
+	assert.Equal(t, gFemale, resData.Records[4].Gender)
 
-	assert.Equal(t, "P06", responseData.Records[5].Id)
-	assert.Equal(t, "Bruno", responseData.Records[5].Given)
-	assert.Equal(t, "Maciejewski", responseData.Records[5].Surname)
-	assert.Equal(t, gMale, responseData.Records[5].Gender)
+	assert.Equal(t, "P06", resData.Records[5].Id)
+	assert.Equal(t, "Bruno", resData.Records[5].Given)
+	assert.Equal(t, "Maciejewski", resData.Records[5].Surname)
+	assert.Equal(t, gMale, resData.Records[5].Gender)
 
-	assert.Equal(t, "P07", responseData.Records[6].Id)
-	assert.Equal(t, "Mirosława", responseData.Records[6].Given)
-	assert.Equal(t, "Czarnecka", responseData.Records[6].Surname)
-	assert.Equal(t, gFemale, responseData.Records[6].Gender)
+	assert.Equal(t, "P07", resData.Records[6].Id)
+	assert.Equal(t, "Mirosława", resData.Records[6].Given)
+	assert.Equal(t, "Czarnecka", resData.Records[6].Surname)
+	assert.Equal(t, gFemale, resData.Records[6].Gender)
 
-	assert.Equal(t, "P08", responseData.Records[7].Id)
-	assert.Equal(t, "Elena", responseData.Records[7].Given)
-	assert.Equal(t, "Szewczyk", responseData.Records[7].Surname)
-	assert.Equal(t, gFemale, responseData.Records[7].Gender)
+	assert.Equal(t, "P08", resData.Records[7].Id)
+	assert.Equal(t, "Elena", resData.Records[7].Given)
+	assert.Equal(t, "Szewczyk", resData.Records[7].Surname)
+	assert.Equal(t, gFemale, resData.Records[7].Gender)
 
-	assert.Equal(t, "P09", responseData.Records[8].Id)
-	assert.Equal(t, "Ariel", responseData.Records[8].Given)
-	assert.Equal(t, "Zalewski", responseData.Records[8].Surname)
-	assert.Equal(t, gMale, responseData.Records[8].Gender)
+	assert.Equal(t, "P09", resData.Records[8].Id)
+	assert.Equal(t, "Ariel", resData.Records[8].Given)
+	assert.Equal(t, "Zalewski", resData.Records[8].Surname)
+	assert.Equal(t, gMale, resData.Records[8].Gender)
 
-	assert.Equal(t, "P10", responseData.Records[9].Id)
-	assert.Equal(t, "Florian", responseData.Records[9].Given)
-	assert.Equal(t, "Jankowski", responseData.Records[9].Surname)
-	assert.Equal(t, gMale, responseData.Records[9].Gender)
+	assert.Equal(t, "P10", resData.Records[9].Id)
+	assert.Equal(t, "Florian", resData.Records[9].Given)
+	assert.Equal(t, "Jankowski", resData.Records[9].Surname)
+	assert.Equal(t, gMale, resData.Records[9].Gender)
 
-	assert.Equal(t, "http://example.com/people?limit=10&page=1", responseData.Pagination.NextUrl)
-	assert.Empty(t, responseData.Pagination.PrevUrl)
+	assert.Equal(t, "http://example.com/people?limit=10&page=1", resData.Pagination.NextUrl)
+	assert.Empty(t, resData.Pagination.PrevUrl)
 
 	// Request the second page:
 
-	res = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", responseData.Pagination.NextUrl, nil)
-	router.ServeHTTP(res, req)
+	res = testMakeRequest(router, "GET", resData.Pagination.NextUrl, nil)
 
 	assert.Equal(t, res.Code, http.StatusOK)
 
-	require.True(t, json.Valid(res.Body.Bytes()))
-	responseData = responseJson{}
-	err = json.Unmarshal(res.Body.Bytes(), &responseData)
-	require.Nil(t, err)
+	resData = testPersonListRes(t, res)
 
-	assert.Len(t, responseData.Records, 3)
-	assert.Equal(t, "P11", responseData.Records[0].Id)
-	assert.Equal(t, "Borys", responseData.Records[0].Given)
-	assert.Equal(t, "Kalinowski", responseData.Records[0].Surname)
-	assert.Equal(t, gMale, responseData.Records[0].Gender)
+	assert.Len(t, resData.Records, 3)
+	assert.Equal(t, "P11", resData.Records[0].Id)
+	assert.Equal(t, "Borys", resData.Records[0].Given)
+	assert.Equal(t, "Kalinowski", resData.Records[0].Surname)
+	assert.Equal(t, gMale, resData.Records[0].Gender)
 
-	assert.Equal(t, "P12", responseData.Records[1].Id)
-	assert.Equal(t, "Oliwia", responseData.Records[1].Given)
-	assert.Equal(t, "Cieślak", responseData.Records[1].Surname)
-	assert.Equal(t, gFemale, responseData.Records[1].Gender)
+	assert.Equal(t, "P12", resData.Records[1].Id)
+	assert.Equal(t, "Oliwia", resData.Records[1].Given)
+	assert.Equal(t, "Cieślak", resData.Records[1].Surname)
+	assert.Equal(t, gFemale, resData.Records[1].Gender)
 
-	assert.Equal(t, "P13", responseData.Records[2].Id)
-	assert.Equal(t, "Natalia", responseData.Records[2].Given)
-	assert.Equal(t, "Ziółkowska", responseData.Records[2].Surname)
-	assert.Equal(t, gFemale, responseData.Records[2].Gender)
+	assert.Equal(t, "P13", resData.Records[2].Id)
+	assert.Equal(t, "Natalia", resData.Records[2].Given)
+	assert.Equal(t, "Ziółkowska", resData.Records[2].Surname)
+	assert.Equal(t, gFemale, resData.Records[2].Gender)
 
-	assert.Empty(t, responseData.Pagination.NextUrl)
-	assert.Equal(t, "http://example.com/people?limit=10&page=0", responseData.Pagination.PrevUrl)
+	assert.Empty(t, resData.Pagination.NextUrl)
+	assert.Equal(t, "http://example.com/people?limit=10&page=0", resData.Pagination.PrevUrl)
 }
 
 /* Test if the retrieve people endpoint correctly handles invalid pagination parameters */
@@ -344,49 +330,31 @@ func TestRetrievePeopleRequestPaginationParams(t *testing.T) {
 
 	// Request negative page:
 
-	res := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/people?page=-1", nil)
-	router.ServeHTTP(res, req)
+	res := testMakeRequest(router, "GET", "/people?page=-1", nil)
 
 	assert.Equal(t, res.Code, http.StatusBadRequest)
 
-	responseData := testErrorJson{}
+	resData := testErrorRes(t, res)
 
-	require.True(t, json.Valid(res.Body.Bytes()))
-	err := json.Unmarshal(res.Body.Bytes(), &responseData)
-	require.Nil(t, err)
-
-	assert.Equal(t, queryErrorMsg, responseData.Message)
+	assert.Equal(t, queryErrorMsg, resData.Message)
 
 	// Request too small page size:
 
-	res = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/people?limit=5", nil)
-	router.ServeHTTP(res, req)
+	res = testMakeRequest(router, "GET", "/people?limit=5", nil)
 
 	assert.Equal(t, res.Code, http.StatusBadRequest)
 
-	responseData = testErrorJson{}
+	resData = testErrorRes(t, res)
 
-	require.True(t, json.Valid(res.Body.Bytes()))
-	err = json.Unmarshal(res.Body.Bytes(), &responseData)
-	require.Nil(t, err)
-
-	assert.Equal(t, queryErrorMsg, responseData.Message)
+	assert.Equal(t, queryErrorMsg, resData.Message)
 
 	// Request too big page size:
 
-	res = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/people?limit=1000", nil)
-	router.ServeHTTP(res, req)
+	res = testMakeRequest(router, "GET", "/people?limit=1000", nil)
 
 	assert.Equal(t, res.Code, http.StatusBadRequest)
 
-	responseData = testErrorJson{}
+	resData = testErrorRes(t, res)
 
-	require.True(t, json.Valid(res.Body.Bytes()))
-	err = json.Unmarshal(res.Body.Bytes(), &responseData)
-	require.Nil(t, err)
-
-	assert.Equal(t, queryErrorMsg, responseData.Message)
+	assert.Equal(t, queryErrorMsg, resData.Message)
 }
