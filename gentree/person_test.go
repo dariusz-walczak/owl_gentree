@@ -44,12 +44,29 @@ func testJsonRes(t *testing.T, res *httptest.ResponseRecorder, payload interface
 	require.Nil(t, err)
 }
 
+func testPersonRes(t *testing.T, res *httptest.ResponseRecorder) testPersonJson {
+	payload := testPersonJson{}
+	testJsonRes(t, res, &payload)
+	return payload
+}
+
 type testErrorJson struct {
 	Message string `json:"message"`
 }
 
 func testErrorRes(t *testing.T, res *httptest.ResponseRecorder) testErrorJson {
 	payload := testErrorJson{}
+	testJsonRes(t, res, &payload)
+	return payload
+}
+
+type testLocationJson struct {
+	Message  string `json:"message"`
+	Location string `json:"location"`
+}
+
+func testLocationRes(t *testing.T, res *httptest.ResponseRecorder) testLocationJson {
+	payload := testLocationJson{}
 	testJsonRes(t, res, &payload)
 	return payload
 }
@@ -195,6 +212,81 @@ func TestCreatePersonRequestPayload(t *testing.T) {
 	resData = testErrorRes(t, res)
 
 	assert.Equal(t, payloadErrorMsg, resData.Message)
+}
+
+/* Check if the create person handler correctly handles the case of already existing person.
+   Confirm that the returned location string works as expected */
+func TestCreatePersonRequestExists(t *testing.T) {
+	router := setupRouter()
+
+	people = map[string]personRecord{
+		"X99": personRecord{
+			Id:      "X99",
+			Given:   "Marian",
+			Surname: "Zakrzewski",
+			Gender:  gMale}}
+
+	person := testPersonJson{
+		Id:      "X99",
+		Given:   "Maria",
+		Surname: "Zakrzewska",
+		Gender:  gFemale}
+
+	res := testMakeRequest(router, "POST", "/people", testJsonBody(t, person))
+
+	assert.Equal(t, res.Code, http.StatusBadRequest)
+
+	resData1 := testLocationRes(t, res)
+
+	assert.Equal(t, "Person (X99) already exists", resData1.Message)
+	assert.Equal(t, "http://example.com/people/X99", resData1.Location)
+
+	// Retrieve the record to confirm that the Id field not specified:
+	res = testMakeRequest(router, "GET", resData1.Location, nil)
+
+	assert.Equal(t, res.Code, http.StatusOK)
+
+	resData2 := testPersonRes(t, res)
+
+	assert.Equal(t, "X99", resData2.Id)
+	assert.Equal(t, "Marian", resData2.Given)
+	assert.Equal(t, "Zakrzewski", resData2.Surname)
+	assert.Equal(t, gMale, resData2.Gender)
+}
+
+/* Test if the replace person endpoint overrides the existing record completely
+
+   The person identifier is taken from the request uri. The identifier specified in the payload
+   should be ignored if provided */
+func TestReplacePersonRequestSuccess(t *testing.T) {
+	router := setupRouter()
+
+	people = map[string]personRecord{
+		"5rjk": personRecord{
+			Id:      "5rjk",
+			Given:   "Honorata",
+			Surname: "Czarnecka",
+			Gender:  gFemale}}
+
+	person := testPersonJson{
+		Id:      "ignored",
+		Given:   "Gniewomir",
+		Surname: "Baranek",
+		Gender:  gMale}
+
+	res := testMakeRequest(router, "PUT", "/people/5rjk", testJsonBody(t, person))
+
+	assert.Equal(t, res.Code, http.StatusOK)
+
+	resData := testErrorRes(t, res)
+
+	assert.Equal(t, "Person record replaced", resData.Message)
+
+	assert.Len(t, people, 1)
+	assert.Equal(t, "5rjk", people["5rjk"].Id)
+	assert.Equal(t, "Gniewomir", people["5rjk"].Given)
+	assert.Equal(t, "Baranek", people["5rjk"].Surname)
+	assert.Equal(t, gMale, people["5rjk"].Gender)
 }
 
 /* Test if the retrieve people endpoint correctly deals with empty database */
