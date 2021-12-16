@@ -694,3 +694,69 @@ func TestRetrievePeopleRequestPaginationParams(t *testing.T) {
 
 	assert.Equal(t, queryErrorMsg, resData.Message)
 }
+
+/* Test if the retrieve person endpoint correctly returns person data */
+func TestRetrievePersonRequestSuccess(t *testing.T) {
+	router := setupRouter()
+
+	people = map[string]personRecord{
+		"P01": personRecord{"P01", "Зоя Юлийовна", "Жданов", gFemale},
+		"P02": personRecord{"P02", "Нина Романовна", "Примаков", gFemale},
+	}
+
+	res := testMakeRequest(router, "GET", "/people/P02", nil)
+
+	assert.Equal(t, http.StatusOK, res.Code)
+
+	resData := testPersonRes(t, res)
+
+	assert.Equal(t, "P02", resData.Id)
+	assert.Equal(t, "Нина Романовна", resData.Given)
+	assert.Equal(t, "Примаков", resData.Surname)
+	assert.Equal(t, gFemale, resData.Gender)
+}
+
+/* Test if the retrieve person endpoint handles invalid person id format correctly */
+func TestRetrievePersonRequestError(t *testing.T) {
+	router := setupRouter()
+
+	people = map[string]personRecord{
+		"3697": personRecord{
+			Id:      "3697",
+			Given:   "Жанна",
+			Surname: "Степанов",
+			Gender:  gFemale},
+		"9108": personRecord{
+			Id:      "9108",
+			Given:   "Абрам",
+			Surname: "Носов",
+			Gender:  gMale}}
+
+	res := testMakeRequest(router, "GET", "/people/_xyz_", nil)
+
+	assert.Equal(t, http.StatusBadRequest, res.Code)
+
+	resData := testErrorRes(t, res)
+
+	assert.Equal(t, uriErrorMsg, resData.Message)
+}
+
+/* Test if the retrieve person endpoint handles missing person correctly */
+func TestRetrievePersonRequestMissing(t *testing.T) {
+	router := setupRouter()
+
+	people = map[string]personRecord{
+		"5303": personRecord{
+			Id:      "5303",
+			Given:   "Онисим",
+			Surname: "Абакумов",
+			Gender:  gMale}}
+
+	res := testMakeRequest(router, "GET", "/people/7108", nil)
+
+	assert.Equal(t, http.StatusNotFound, res.Code)
+
+	resData := testErrorRes(t, res)
+
+	assert.Equal(t, "Unknown person id", resData.Message)
+}
