@@ -158,14 +158,17 @@ func replacePerson(c *gin.Context) {
 		return
 	}
 
-	people[person.Id] = person.toRecord()
+	/* The person identifier provided in the request URI should take precedence over the identifier
+	   potentially provided in the payload data */
+	person.Id = params.Pid
+	people[params.Pid] = person.toRecord()
 
 	c.JSON(http.StatusOK, gin.H{"message": "Person record replaced"})
 
 	log.Infof("Replaced the person (%s) record", person.Id)
 }
 
-/* Handle a retrieva person request
+/* Handle a retrieve person request
 
    The function will extract the person id from the request URI (specifyPersonUri) */
 func retrievePerson(c *gin.Context) {
