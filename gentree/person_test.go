@@ -149,6 +149,46 @@ func TestPersonListToPayload(t *testing.T) {
 	assert.Equal(t, p[2].Gender, gFemale)
 }
 
+/* Check if the delete person handler correctly removes the specified person */
+func TestDeletePersonRequestSuccess(t *testing.T) {
+	router := setupRouter()
+
+	people = map[string]personRecord{
+		"162d2a92": personRecord{
+			Id:      "162d2a92",
+			Given:   "Kazimierz",
+			Surname: "Marciniak",
+			Gender:  gMale},
+		"4a98ebf4": personRecord{
+			Id:      "4a98ebf4",
+			Given:   "Mirosław",
+			Surname: "Sokołowski",
+			Gender:  gMale},
+		"d910690c": personRecord{
+			Id:      "d910690c",
+			Given:   "Bernadetta",
+			Surname: "Nowak",
+			Gender:  gFemale}}
+
+	res := testMakeRequest(router, "DELETE", "/people/4a98ebf4", nil)
+
+	assert.Equal(t, http.StatusOK, res.Code)
+
+	resData := testErrorRes(t, res)
+
+	assert.Equal(t, "Person deleted", resData.Message)
+
+	assert.Len(t, people, 2)
+	assert.Equal(t, "162d2a92", people["162d2a92"].Id)
+	assert.Equal(t, "Kazimierz", people["162d2a92"].Given)
+	assert.Equal(t, "Marciniak", people["162d2a92"].Surname)
+	assert.Equal(t, gMale, people["162d2a92"].Gender)
+	assert.Equal(t, "d910690c", people["d910690c"].Id)
+	assert.Equal(t, "Bernadetta", people["d910690c"].Given)
+	assert.Equal(t, "Nowak", people["d910690c"].Surname)
+	assert.Equal(t, gFemale, people["d910690c"].Gender)
+}
+
 func TestCreatePersonRequestSuccess(t *testing.T) {
 	router := setupRouter()
 
