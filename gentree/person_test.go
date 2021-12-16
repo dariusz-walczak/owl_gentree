@@ -162,7 +162,7 @@ func TestCreatePersonRequestSuccess(t *testing.T) {
 
 	res := testMakeRequest(router, "POST", "/people", testJsonBody(t, person))
 
-	assert.Equal(t, res.Code, http.StatusCreated)
+	assert.Equal(t, http.StatusCreated, res.Code)
 
 	resData := testErrorRes(t, res)
 
@@ -192,7 +192,7 @@ func TestCreatePersonRequestPayload(t *testing.T) {
 
 	res := testMakeRequest(router, "POST", "/people", testJsonBody(t, person))
 
-	assert.Equal(t, res.Code, http.StatusBadRequest)
+	assert.Equal(t, http.StatusBadRequest, res.Code)
 
 	resData := testErrorRes(t, res)
 
@@ -207,7 +207,7 @@ func TestCreatePersonRequestPayload(t *testing.T) {
 
 	res = testMakeRequest(router, "POST", "/people", testJsonBody(t, person))
 
-	assert.Equal(t, res.Code, http.StatusBadRequest)
+	assert.Equal(t, http.StatusBadRequest, res.Code)
 
 	resData = testErrorRes(t, res)
 
@@ -234,7 +234,7 @@ func TestCreatePersonRequestExists(t *testing.T) {
 
 	res := testMakeRequest(router, "POST", "/people", testJsonBody(t, person))
 
-	assert.Equal(t, res.Code, http.StatusBadRequest)
+	assert.Equal(t, http.StatusBadRequest, res.Code)
 
 	resData1 := testLocationRes(t, res)
 
@@ -244,7 +244,7 @@ func TestCreatePersonRequestExists(t *testing.T) {
 	// Retrieve the record to confirm that the Id field not specified:
 	res = testMakeRequest(router, "GET", resData1.Location, nil)
 
-	assert.Equal(t, res.Code, http.StatusOK)
+	assert.Equal(t, http.StatusOK, res.Code)
 
 	resData2 := testPersonRes(t, res)
 
@@ -276,7 +276,7 @@ func TestReplacePersonRequestSuccess(t *testing.T) {
 
 	res := testMakeRequest(router, "PUT", "/people/5rjk", testJsonBody(t, person))
 
-	assert.Equal(t, res.Code, http.StatusOK)
+	assert.Equal(t, http.StatusOK, res.Code)
 
 	resData := testErrorRes(t, res)
 
@@ -297,7 +297,7 @@ func TestRetrievePeopleRequestEmpty(t *testing.T) {
 
 	res := testMakeRequest(router, "GET", "/people", nil)
 
-	assert.Equal(t, res.Code, http.StatusOK)
+	assert.Equal(t, http.StatusOK, res.Code)
 
 	resData := testPersonListRes(t, res)
 
@@ -330,7 +330,7 @@ func TestRetrievePeopleRequestPagination(t *testing.T) {
 
 	res := testMakeRequest(router, "GET", "/people?limit=10&page=0", nil)
 
-	assert.Equal(t, res.Code, http.StatusOK)
+	assert.Equal(t, http.StatusOK, res.Code)
 
 	resData := testPersonListRes(t, res)
 
@@ -392,7 +392,7 @@ func TestRetrievePeopleRequestPagination(t *testing.T) {
 
 	res = testMakeRequest(router, "GET", resData.Pagination.NextUrl, nil)
 
-	assert.Equal(t, res.Code, http.StatusOK)
+	assert.Equal(t, http.StatusOK, res.Code)
 
 	resData = testPersonListRes(t, res)
 
@@ -424,7 +424,7 @@ func TestRetrievePeopleRequestPaginationParams(t *testing.T) {
 
 	res := testMakeRequest(router, "GET", "/people?page=-1", nil)
 
-	assert.Equal(t, res.Code, http.StatusBadRequest)
+	assert.Equal(t, http.StatusBadRequest, res.Code)
 
 	resData := testErrorRes(t, res)
 
@@ -434,7 +434,7 @@ func TestRetrievePeopleRequestPaginationParams(t *testing.T) {
 
 	res = testMakeRequest(router, "GET", "/people?limit=5", nil)
 
-	assert.Equal(t, res.Code, http.StatusBadRequest)
+	assert.Equal(t, http.StatusBadRequest, res.Code)
 
 	resData = testErrorRes(t, res)
 
@@ -444,7 +444,7 @@ func TestRetrievePeopleRequestPaginationParams(t *testing.T) {
 
 	res = testMakeRequest(router, "GET", "/people?limit=1000", nil)
 
-	assert.Equal(t, res.Code, http.StatusBadRequest)
+	assert.Equal(t, http.StatusBadRequest, res.Code)
 
 	resData = testErrorRes(t, res)
 
