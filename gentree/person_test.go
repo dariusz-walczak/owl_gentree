@@ -224,6 +224,41 @@ func TestDeletePersonRequestError(t *testing.T) {
 	assert.Equal(t, gMale, people["f94196b8"].Gender)
 }
 
+/* Test if the delete person endpoint handles the missing person case correctly */
+func TestDeletePersonRequestMissing(t *testing.T) {
+	router := setupRouter()
+
+	people = map[string]personRecord{
+		"814b7104": personRecord{
+			Id:      "814b7104",
+			Given:   "Денис Афанасович",
+			Surname: "Сергеев",
+			Gender:  gMale},
+		"d7f77b75": personRecord{
+			Id:      "d7f77b75",
+			Given:   "Ольга Якововна",
+			Surname: "Ивашов",
+			Gender:  gFemale}}
+
+	res := testMakeRequest(router, "DELETE", "/people/23a1913b", nil)
+
+	assert.Equal(t, http.StatusNotFound, res.Code)
+
+	resData := testErrorRes(t, res)
+
+	assert.Equal(t, "Unknown person id", resData.Message)
+
+	assert.Len(t, people, 2)
+	assert.Equal(t, "814b7104", people["814b7104"].Id)
+	assert.Equal(t, "Денис Афанасович", people["814b7104"].Given)
+	assert.Equal(t, "Сергеев", people["814b7104"].Surname)
+	assert.Equal(t, gMale, people["814b7104"].Gender)
+	assert.Equal(t, "d7f77b75", people["d7f77b75"].Id)
+	assert.Equal(t, "Ольга Якововна", people["d7f77b75"].Given)
+	assert.Equal(t, "Ивашов", people["d7f77b75"].Surname)
+	assert.Equal(t, gFemale, people["d7f77b75"].Gender)
+}
+
 func TestCreatePersonRequestSuccess(t *testing.T) {
 	router := setupRouter()
 
