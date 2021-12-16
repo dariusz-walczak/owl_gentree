@@ -311,6 +311,118 @@ func TestReplacePersonRequestSuccess(t *testing.T) {
 	assert.Equal(t, gFemale, people["5rjk"].Gender)
 }
 
+/* Test if the replace person endpoint handles not existing record correctly
+
+   The handler should indicate an error and leave the people map unaltered */
+func TestReplacePersonRequestMissing(t *testing.T) {
+	router := setupRouter()
+
+	people = map[string]personRecord{
+		"xejf": personRecord{
+			Id:      "xejf",
+			Given:   "Elżbieta",
+			Surname: "Głowacka",
+			Gender:  gFemale},
+		"xl5l": personRecord{
+			Id:      "xl5l",
+			Given:   "Karol",
+			Surname: "Wróblewski",
+			Gender:  gMale}}
+
+	person := testPersonJson{
+		Given:   "Igor",
+		Surname: "Krawczyk",
+		Gender:  gMale}
+
+	res := testMakeRequest(router, "PUT", "/people/mpei", testJsonBody(t, person))
+
+	assert.Equal(t, http.StatusNotFound, res.Code)
+
+	resData := testErrorRes(t, res)
+
+	assert.Equal(t, "Unknown person id", resData.Message)
+
+	assert.Len(t, people, 2)
+	assert.Equal(t, "xejf", people["xejf"].Id)
+	assert.Equal(t, "Elżbieta", people["xejf"].Given)
+	assert.Equal(t, "Głowacka", people["xejf"].Surname)
+	assert.Equal(t, gFemale, people["xejf"].Gender)
+	assert.Equal(t, "xl5l", people["xl5l"].Id)
+	assert.Equal(t, "Karol", people["xl5l"].Given)
+	assert.Equal(t, "Wróblewski", people["xl5l"].Surname)
+	assert.Equal(t, gMale, people["xl5l"].Gender)
+}
+
+/* Test if the replace person endpoint handles data format errors correctly
+
+   1. The handler should indicate an error when the URI person id is invalid
+   2. The handler should indicate an error when the gender value is invalid */
+func TestReplacePersonRequestErrors(t *testing.T) {
+	router := setupRouter()
+
+	people = map[string]personRecord{
+		"wjc5": personRecord{
+			Id:      "wjc5",
+			Given:   "Fryderyk",
+			Surname: "Lewandowski",
+			Gender:  gMale},
+		"a1n6": personRecord{
+			Id:      "a1n6",
+			Given:   "",
+			Surname: "Krawczyk",
+			Gender:  gUnknown}}
+
+	// Case 1: Invalid URI person id
+
+	person := testPersonJson{
+		Given:   "Jarosław",
+		Surname: "Walczyk",
+		Gender:  gMale}
+
+	res := testMakeRequest(router, "PUT", "/people/lx_t", testJsonBody(t, person))
+
+	assert.Equal(t, http.StatusBadRequest, res.Code)
+
+	resData := testErrorRes(t, res)
+
+	assert.Equal(t, uriErrorMsg, resData.Message)
+
+	assert.Len(t, people, 2)
+	assert.Equal(t, "wjc5", people["wjc5"].Id)
+	assert.Equal(t, "Fryderyk", people["wjc5"].Given)
+	assert.Equal(t, "Lewandowski", people["wjc5"].Surname)
+	assert.Equal(t, gMale, people["wjc5"].Gender)
+	assert.Equal(t, "a1n6", people["a1n6"].Id)
+	assert.Empty(t, people["a1n6"].Given)
+	assert.Equal(t, "Krawczyk", people["a1n6"].Surname)
+	assert.Equal(t, gUnknown, people["a1n6"].Gender)
+
+	// Case 2: Invalid payload gender value
+
+	person = testPersonJson{
+		Given:   "Adam",
+		Surname: "Krawczyk",
+		Gender:  "maale"}
+
+	res = testMakeRequest(router, "PUT", "/people/a1n6", testJsonBody(t, person))
+
+	assert.Equal(t, http.StatusBadRequest, res.Code)
+
+	resData = testErrorRes(t, res)
+
+	assert.Equal(t, payloadErrorMsg, resData.Message)
+
+	assert.Len(t, people, 2)
+	assert.Equal(t, "wjc5", people["wjc5"].Id)
+	assert.Equal(t, "Fryderyk", people["wjc5"].Given)
+	assert.Equal(t, "Lewandowski", people["wjc5"].Surname)
+	assert.Equal(t, gMale, people["wjc5"].Gender)
+	assert.Equal(t, "a1n6", people["a1n6"].Id)
+	assert.Empty(t, people["a1n6"].Given)
+	assert.Equal(t, "Krawczyk", people["a1n6"].Surname)
+	assert.Equal(t, gUnknown, people["a1n6"].Gender)
+}
+
 /* Test if the retrieve people endpoint correctly deals with empty database */
 func TestRetrievePeopleRequestEmpty(t *testing.T) {
 	router := setupRouter()
