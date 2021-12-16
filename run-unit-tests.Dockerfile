@@ -8,10 +8,10 @@ RUN ["go", "get", "-u", "github.com/jessevdk/go-flags"]
 RUN ["go", "get", "-u", "github.com/gin-contrib/location"]
 RUN ["go", "get", "-u", "github.com/stretchr/testify/assert"]
 RUN ["go", "get", "-u", "github.com/stretchr/testify/require"]
+RUN ["go", "get", "-u", "github.com/rakyll/gotest"]
 
 ENV GIN_MODE=release
 
 COPY gentree/*.go ./
 COPY run_gentree_ut.sh ./
 ENTRYPOINT ["./run_gentree_ut.sh"]
-#ENTRYPOINT ["go", "test", "-v", "-cover", "."]

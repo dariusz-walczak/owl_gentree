@@ -2,4 +2,4 @@
 
 set -ex
 
-go test -v -cover -coverprofile /output/gentree_cover.out .
+gotest -v -cover -coverprofile /output/gentree_cover.out .
