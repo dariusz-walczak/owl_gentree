@@ -18,7 +18,7 @@ type testPaginationJson struct {
 }
 
 type testPersonJson struct {
-	Id      string `json:"id"`
+	Id      string `json:"id,omitempty"`
 	Given   string `json:"given_names"`
 	Surname string `json:"surname"`
 	Gender  string `json:"gender"`
@@ -268,6 +268,8 @@ func TestReplacePersonRequestSuccess(t *testing.T) {
 			Surname: "Czarnecka",
 			Gender:  gFemale}}
 
+	// Check if the payload person id is ignored:
+
 	person := testPersonJson{
 		Id:      "ignored",
 		Given:   "Gniewomir",
@@ -287,6 +289,26 @@ func TestReplacePersonRequestSuccess(t *testing.T) {
 	assert.Equal(t, "Gniewomir", people["5rjk"].Given)
 	assert.Equal(t, "Baranek", people["5rjk"].Surname)
 	assert.Equal(t, gMale, people["5rjk"].Gender)
+
+	// Check if the payload person id can be omitted
+	person = testPersonJson{
+		Given:   "Magdalena",
+		Surname: "Malinowska",
+		Gender:  gFemale}
+
+	res = testMakeRequest(router, "PUT", "/people/5rjk", testJsonBody(t, person))
+
+	assert.Equal(t, http.StatusOK, res.Code)
+
+	resData = testErrorRes(t, res)
+
+	assert.Equal(t, "Person record replaced", resData.Message)
+
+	assert.Len(t, people, 1)
+	assert.Equal(t, "5rjk", people["5rjk"].Id)
+	assert.Equal(t, "Magdalena", people["5rjk"].Given)
+	assert.Equal(t, "Malinowska", people["5rjk"].Surname)
+	assert.Equal(t, gFemale, people["5rjk"].Gender)
 }
 
 /* Test if the retrieve people endpoint correctly deals with empty database */
