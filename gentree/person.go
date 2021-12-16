@@ -280,5 +280,7 @@ func deletePerson(c *gin.Context) {
 
 	delete(people, params.Pid)
 
+	c.JSON(http.StatusOK, gin.H{"message": "Person deleted"})
+
 	log.Infof("Deleted the requested person record (%s)", params.Pid)
 }
