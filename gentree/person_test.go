@@ -84,7 +84,7 @@ func testPersonListRes(t *testing.T, res *httptest.ResponseRecorder) testPersonL
 
 /* Test the person payload to the person record conversion function */
 func TestPersonPayloadToRecord(t *testing.T) {
-	p := personPayload{
+	p := fullPersonPayload{
 		Id:      "123",
 		Given:   "Józefa Alina",
 		Surname: "Jankowska",
@@ -97,7 +97,7 @@ func TestPersonPayloadToRecord(t *testing.T) {
 	assert.Equal(t, r.Surname, "Jankowska")
 	assert.Equal(t, r.Gender, gFemale)
 
-	p = personPayload{Id: "XYZ"}
+	p = fullPersonPayload{Id: "XYZ"}
 
 	r = p.toRecord()
 

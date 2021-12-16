@@ -9,20 +9,20 @@ import (
 )
 
 /* Intermediate structure used to bind person payload and respond with person data */
-type personPayload struct {
+type fullPersonPayload struct {
 	Id      string `json:"id" binding:"required,alphanum|uuid"`
 	Given   string `json:"given_names"`
 	Surname string `json:"surname"`
 	Gender  string `json:"gender" binding:"isdefault|oneof=male female unknown"`
 }
 
-/* Create a person record from a person payload
+/* Create a person record from a full person payload
 
    This function is used by request handlers when communicating with the storage backend
 
    Returns:
    * person record */
-func (p *personPayload) toRecord() personRecord {
+func (p *fullPersonPayload) toRecord() personRecord {
 	gender := p.Gender
 
 	if gender == "" {
@@ -32,6 +32,25 @@ func (p *personPayload) toRecord() personRecord {
 	return personRecord{p.Id, p.Given, p.Surname, gender}
 }
 
+/* Intermediate structure used to bind person payload when the person id field is not expected */
+type noidPersonPayload struct {
+	Given   string `json:"given_names"`
+	Surname string `json:"surname"`
+	Gender  string `json:"gender" binding:"isdefault|oneof=male female unknown"`
+}
+
+/* Create a person record from a no-id person payload
+
+   This function is used by request handlers when communicating with the storage backend
+
+   Returns:
+   * person record */
+func (p *noidPersonPayload) toRecord(pid string) personRecord {
+	full := fullPersonPayload{Id: pid, Given: p.Given, Surname: p.Surname, Gender: p.Gender}
+
+	return full.toRecord()
+}
+
 /* Convert a person record to person payload
 
    This function is used by request handlers when responding with data provided by the storage
@@ -39,8 +58,8 @@ func (p *personPayload) toRecord() personRecord {
 
    Returns:
    * relation payload */
-func (r *personRecord) toPayload() personPayload {
-	return personPayload{r.Id, r.Given, r.Surname, r.Gender}
+func (r *personRecord) toPayload() fullPersonPayload {
+	return fullPersonPayload{r.Id, r.Given, r.Surname, r.Gender}
 }
 
 /* Convert a list of person records to payload
@@ -50,8 +69,8 @@ func (r *personRecord) toPayload() personPayload {
 
    Returns:
    * slice of person payload structures */
-func (list personList) toPayload() []personPayload {
-	payload := make([]personPayload, 0, len(list))
+func (list personList) toPayload() []fullPersonPayload {
+	payload := make([]fullPersonPayload, 0, len(list))
 
 	for _, r := range list {
 		payload = append(payload, r.toPayload())
@@ -81,11 +100,11 @@ func makeRetrievePersonUrl(c *gin.Context, pid string) string {
 
 /* Handle a create person request
 
-   The function will retrieve all the input data from the request payload (personPayload) */
+   The function will retrieve all the input data from the request payload (fullPersonPayload) */
 func createPerson(c *gin.Context) {
 	log.Trace("Entry checkpoint")
 
-	var person personPayload
+	var person fullPersonPayload
 
 	if err := c.ShouldBindJSON(&person); err != nil {
 		log.Infof("New person data unmarshalling error: %s", err)
@@ -122,7 +141,7 @@ func createPerson(c *gin.Context) {
 /* Handle a replace person request
 
    The function will extract the person id from the request URI (specifyPersonUri), and the rest of
-   the data from the request payload (personPayload) */
+   the data from the request payload (noidPersonPayload) */
 func replacePerson(c *gin.Context) {
 	log.Trace("Entry checkpoint")
 
@@ -149,7 +168,7 @@ func replacePerson(c *gin.Context) {
 		return
 	}
 
-	var person personPayload
+	var person noidPersonPayload
 
 	if err := c.ShouldBindJSON(&person); err != nil {
 		log.Infof("Person data unmarshalling error: %s", err)
@@ -158,14 +177,11 @@ func replacePerson(c *gin.Context) {
 		return
 	}
 
-	/* The person identifier provided in the request URI should take precedence over the identifier
-	   potentially provided in the payload data */
-	person.Id = params.Pid
-	people[params.Pid] = person.toRecord()
+	people[params.Pid] = person.toRecord(params.Pid)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Person record replaced"})
 
-	log.Infof("Replaced the person (%s) record", person.Id)
+	log.Infof("Replaced the person (%s) record", params.Pid)
 }
 
 /* Handle a retrieve person request
