@@ -23,7 +23,7 @@ const (
 
 // Error codes to be used with the AppError structure:
 const (
-	errUnspecified = iota // nolint:deadcode
+	errUnspecified = iota // nolint:deadcode,varcheck
 	errDuplicateFound
 	// Generation of a random identifier has failed due to the id pool starting to exhaust
 	errIdGenerationFailed
