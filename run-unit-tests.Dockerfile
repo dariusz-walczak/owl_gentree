@@ -14,4 +14,4 @@ ENV GIN_MODE=release
 
 COPY gentree/*.go ./
 COPY run_gentree_ut.sh ./
-ENTRYPOINT ["./run_gentree_ut.sh"]
+ENTRYPOINT ["gotest", ".", "-v", "-cover"]
