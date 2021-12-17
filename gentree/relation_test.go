@@ -344,3 +344,49 @@ func TestCreateRelationRequestPayloadError(t *testing.T) {
 
 	assert.Equal(t, payloadErrorMsg, resData.Message)
 }
+
+/* Test if both the create relation endpoints handle relation validation errors correctly
+
+   1. The general handler should indicate an error when the relation is invalid
+   2. The person specific handler should indicate an error when the relation is invalid */
+func TestCreateRelationRequestValidationError(t *testing.T) {
+	router := setupRouter()
+
+	people = map[string]personRecord{
+		"9596": personRecord{
+			Id:      "9596",
+			Given:   "Dorian",
+			Surname: "Piotrowski",
+			Gender:  gMale}}
+
+	relations = map[int64]relationRecord{}
+
+	// Case 1: General handler
+
+	iitRelation := testIitRelationJson{
+		Pid1: "9596",
+		Pid2: "3141",
+		Type: "father"}
+
+	res := testMakeRequest(router, "POST", "/relations", testJsonBody(t, iitRelation))
+
+	assert.Equal(t, http.StatusBadRequest, res.Code)
+
+	resData := testErrorRes(t, res)
+
+	assert.Equal(t, "Relation (9596, father, 3141) is invalid", resData.Message)
+
+	// Case 2: Person specific handler
+	itRelation := testItRelationJson{
+		Pid:  "3141",
+		Type: "father"}
+
+	res = testMakeRequest(
+		router, "POST", "/people/9596/relations", testJsonBody(t, itRelation))
+
+	assert.Equal(t, http.StatusBadRequest, res.Code)
+
+	resData = testErrorRes(t, res)
+
+	assert.Equal(t, "Relation (9596, father, 3141) is invalid", resData.Message)
+}
