@@ -181,7 +181,7 @@ func doCreateRelation(c *gin.Context, relation relationRecord) {
 	relations[id] = relation
 
 	c.Header("Location", makeRetrieveRelationUrl(c, id))
-	c.JSON(http.StatusCreated, gin.H{"message": "Relation created"})
+	c.JSON(http.StatusCreated, gin.H{"message": "Relation created", "relation_id": id})
 
 	log.Infof("Created a new relation (%d) record", relation.Id)
 }
