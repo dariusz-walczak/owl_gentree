@@ -1,0 +1,20 @@
+name: "Run Go Linter"
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build the linter image
+      run: docker build -f run-linter.Dockerfile --tag=owl/gentree_lint:0.1 .
+    - name: Run the linter
+      run: docker run --rm owl/gentree_lint:0.1
