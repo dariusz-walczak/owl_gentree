@@ -277,7 +277,7 @@ func TestCreatePersonRequestSuccess(t *testing.T) {
 	resData := testErrorRes(t, res)
 
 	assert.Equal(t, "ok", resData.Message)
-	assert.Equal(t, "http://example.com/people/1", res.HeaderMap.Get("Location"))
+	assert.Equal(t, "http://example.com/people/1", res.Header().Get("Location"))
 
 	assert.Len(t, people, 1)
 	assert.Equal(t, "1", people["1"].Id)
