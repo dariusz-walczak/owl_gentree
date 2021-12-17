@@ -8,9 +8,7 @@ RUN ["go", "get", "-u", "github.com/jessevdk/go-flags"]
 RUN ["go", "get", "-u", "github.com/gin-contrib/location"]
 RUN ["go", "get", "-u", "github.com/stretchr/testify/assert"]
 RUN ["go", "get", "-u", "github.com/stretchr/testify/require"]
-RUN ["go", "install", "github.com/rakyll/gotest@latest"]
-
-ENV GIN_MODE=release
+RUN ["go", "install", "github.com/golangci/golangci-lint/cmd/golangci-lint@latest"]
 
 COPY gentree/*.go ./
-ENTRYPOINT ["gotest", ".", "-v", "-cover"]
+ENTRYPOINT ["golangci-lint", "run"]
