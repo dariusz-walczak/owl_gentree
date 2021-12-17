@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
@@ -15,6 +16,17 @@ type testIitRelationJson struct {
 type testItRelationJson struct {
 	Pid  string `json:"pid"`
 	Type string `json:"type"`
+}
+
+type testRelationIdJson struct {
+	Message    string `json:"message"`
+	RelationId int64  `json:"relation_id"`
+}
+
+func testRelationIdRes(t *testing.T, res *httptest.ResponseRecorder) testRelationIdJson {
+	payload := testRelationIdJson{}
+	testJsonRes(t, res, &payload)
+	return payload
 }
 
 /* Test if both the create relation endpoints correctly record new, valid relations
@@ -75,10 +87,9 @@ func TestCreatePersonRequestSuccess1(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, res.Code)
 
-	resData := testErrorRes(t, res)
+	resData1 := testRelationIdRes(t, res)
 
-	assert.Equal(t, "Relation created", resData.Message)
-	assert.Len(t, relations, 1)
+	assert.Equal(t, "Relation created", resData1.Message)
 
 	// Case 2: General mother relation
 
@@ -91,10 +102,9 @@ func TestCreatePersonRequestSuccess1(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, res.Code)
 
-	resData = testErrorRes(t, res)
+	resData2 := testRelationIdRes(t, res)
 
-	assert.Equal(t, "Relation created", resData.Message)
-	assert.Len(t, relations, 2)
+	assert.Equal(t, "Relation created", resData2.Message)
 
 	// Case 3: General husband relation
 
@@ -107,10 +117,9 @@ func TestCreatePersonRequestSuccess1(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, res.Code)
 
-	resData = testErrorRes(t, res)
+	resData3 := testRelationIdRes(t, res)
 
-	assert.Equal(t, "Relation created", resData.Message)
-	assert.Len(t, relations, 3)
+	assert.Equal(t, "Relation created", resData3.Message)
 
 	// Case 4: Person specific father relation
 
@@ -122,10 +131,9 @@ func TestCreatePersonRequestSuccess1(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, res.Code)
 
-	resData = testErrorRes(t, res)
+	resData4 := testRelationIdRes(t, res)
 
-	assert.Equal(t, "Relation created", resData.Message)
-	assert.Len(t, relations, 4)
+	assert.Equal(t, "Relation created", resData4.Message)
 
 	// Case 5: Person specific mother relation
 
@@ -137,10 +145,9 @@ func TestCreatePersonRequestSuccess1(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, res.Code)
 
-	resData = testErrorRes(t, res)
+	resData5 := testRelationIdRes(t, res)
 
-	assert.Equal(t, "Relation created", resData.Message)
-	assert.Len(t, relations, 5)
+	assert.Equal(t, "Relation created", resData5.Message)
 
 	// Case 6: Person specific husband relation
 
@@ -152,8 +159,41 @@ func TestCreatePersonRequestSuccess1(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, res.Code)
 
-	resData = testErrorRes(t, res)
+	resData6 := testRelationIdRes(t, res)
 
-	assert.Equal(t, "Relation created", resData.Message)
+	assert.Equal(t, "Relation created", resData6.Message)
+
+	// Check the final state of the relation table:
+
 	assert.Len(t, relations, 6)
+
+	assert.Equal(t, resData1.RelationId, relations[resData1.RelationId].Id)
+	assert.Equal(t, "F1P1", relations[resData1.RelationId].Pid1)
+	assert.Equal(t, "F1P3", relations[resData1.RelationId].Pid2)
+	assert.Equal(t, relFather, relations[resData1.RelationId].Type)
+
+	assert.Equal(t, resData2.RelationId, relations[resData2.RelationId].Id)
+	assert.Equal(t, "F1P2", relations[resData2.RelationId].Pid1)
+	assert.Equal(t, "F1P3", relations[resData2.RelationId].Pid2)
+	assert.Equal(t, relMother, relations[resData2.RelationId].Type)
+
+	assert.Equal(t, resData3.RelationId, relations[resData3.RelationId].Id)
+	assert.Equal(t, "F1P1", relations[resData3.RelationId].Pid1)
+	assert.Equal(t, "F1P2", relations[resData3.RelationId].Pid2)
+	assert.Equal(t, relHusband, relations[resData3.RelationId].Type)
+
+	assert.Equal(t, resData4.RelationId, relations[resData4.RelationId].Id)
+	assert.Equal(t, "F2P1", relations[resData4.RelationId].Pid1)
+	assert.Equal(t, "F2P3", relations[resData4.RelationId].Pid2)
+	assert.Equal(t, relFather, relations[resData4.RelationId].Type)
+
+	assert.Equal(t, resData5.RelationId, relations[resData5.RelationId].Id)
+	assert.Equal(t, "F2P2", relations[resData5.RelationId].Pid1)
+	assert.Equal(t, "F2P3", relations[resData5.RelationId].Pid2)
+	assert.Equal(t, relMother, relations[resData5.RelationId].Type)
+
+	assert.Equal(t, resData6.RelationId, relations[resData6.RelationId].Id)
+	assert.Equal(t, "F2P1", relations[resData6.RelationId].Pid1)
+	assert.Equal(t, "F2P2", relations[resData6.RelationId].Pid2)
+	assert.Equal(t, relHusband, relations[resData6.RelationId].Type)
 }
