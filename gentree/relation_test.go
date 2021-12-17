@@ -260,3 +260,87 @@ func TestCreateRelationRequestExists(t *testing.T) {
 	assert.Equal(t, "Relation (B, mother, C) already exists", resData.Message)
 	assert.Equal(t, "http://example.com/relations/2", resData.Location)
 }
+
+/* Test if the create person specific relation endpoint handles invalid person id format
+   correctly */
+func TestCreateRelationRequestPidError(t *testing.T) {
+	router := setupRouter()
+
+	people = map[string]personRecord{
+		"A": personRecord{
+			Id:      "A",
+			Given:   "Patrycja",
+			Surname: "Ziółkowska",
+			Gender:  gFemale},
+		"B": personRecord{
+			Id:      "B",
+			Given:   "Ireneusz",
+			Surname: "Szymczak",
+			Gender:  gMale}}
+
+	relations = map[int64]relationRecord{}
+
+	relation := testItRelationJson{
+		Pid:  "A",
+		Type: "husband"}
+
+	res := testMakeRequest(router, "POST", "/people/B!/relations", testJsonBody(t, relation))
+
+	assert.Equal(t, http.StatusBadRequest, res.Code)
+
+	resData := testErrorRes(t, res)
+
+	assert.Equal(t, uriErrorMsg, resData.Message)
+}
+
+/* Test if both the create relation endpoints handle payload data format errors correctly
+
+   1. The general handler should indicate an error when the relation type is invalid
+   2. The person specific handler should indicate an error when the relation type is
+      invalid */
+func TestCreateRelationRequestPayloadError(t *testing.T) {
+	router := setupRouter()
+
+	people = map[string]personRecord{
+		"526839f0": personRecord{
+			Id:      "526839f0",
+			Given:   "Dominik",
+			Surname: "Wiśniewski",
+			Gender:  gMale},
+		"38e205fa": personRecord{
+			Id:      "38e205fa",
+			Given:   "Jacek",
+			Surname: "Baran",
+			Gender:  gMale}}
+
+	relations = map[int64]relationRecord{}
+
+	// Case 1: General handler
+
+	iitRelation := testIitRelationJson{
+		Pid1: "526839f0",
+		Pid2: "38e205fa",
+		Type: "invalid"}
+
+	res := testMakeRequest(router, "POST", "/relations", testJsonBody(t, iitRelation))
+
+	assert.Equal(t, http.StatusBadRequest, res.Code)
+
+	resData := testErrorRes(t, res)
+
+	assert.Equal(t, payloadErrorMsg, resData.Message)
+
+	// Case 2: Person specific handler
+	itRelation := testItRelationJson{
+		Pid:  "38e205fa",
+		Type: "invalid"}
+
+	res = testMakeRequest(
+		router, "POST", "/people/526839f0/relations", testJsonBody(t, itRelation))
+
+	assert.Equal(t, http.StatusBadRequest, res.Code)
+
+	resData = testErrorRes(t, res)
+
+	assert.Equal(t, payloadErrorMsg, resData.Message)
+}
