@@ -17,4 +17,4 @@ jobs:
     - name: Build the runner image
       run: docker build -f run-unit-tests.Dockerfile --tag=owl/gentree_test:0.1 .
     - name: Run the tests
-      run: docker run -it --rm owl/gentree_test:0.1
+      run: docker run --rm owl/gentree_test:0.1
