@@ -41,7 +41,7 @@ func testRelationIdRes(t *testing.T, res *httptest.ResponseRecorder) testRelatio
    4. Test the person specific relation endpoint with the father relation
    5. Test the person specific relation endpoint with the mother relation
    6. Test the person specific relation endpoint with the husband relation */
-func TestCreatePersonRequestSuccess1(t *testing.T) {
+func TestCreateRelationRequestSuccess(t *testing.T) {
 	router := setupRouter()
 
 	people = map[string]personRecord{
@@ -196,4 +196,67 @@ func TestCreatePersonRequestSuccess1(t *testing.T) {
 	assert.Equal(t, "F2P1", relations[resData6.RelationId].Pid1)
 	assert.Equal(t, "F2P2", relations[resData6.RelationId].Pid2)
 	assert.Equal(t, relHusband, relations[resData6.RelationId].Type)
+}
+
+/* Test if both the create relation endpoints correctly handle an attempt to create an already
+   existing relation
+
+   Test two variants of the create relation action:
+   1. general (/relations)
+   2. person specific (/people/:pid/relations) */
+func TestCreateRelationRequestExists(t *testing.T) {
+	router := setupRouter()
+
+	people = map[string]personRecord{
+		"A": personRecord{
+			Id:      "A",
+			Given:   "Mirosław",
+			Surname: "Woźniak",
+			Gender:  gMale},
+		"B": personRecord{
+			Id:      "B",
+			Given:   "Oksana",
+			Surname: "Włodarczyk",
+			Gender:  gFemale},
+		"C": personRecord{
+			Id:      "C",
+			Given:   "Olimpia",
+			Surname: "Woźniak",
+			Gender:  gFemale}}
+
+	relations = map[int64]relationRecord{
+		1: relationRecord{Id: 1, Pid1: "A", Pid2: "B", Type: relHusband},
+		2: relationRecord{Id: 2, Pid1: "B", Pid2: "C", Type: relMother},
+		3: relationRecord{Id: 3, Pid1: "A", Pid2: "C", Type: relFather}}
+
+	// Case 1: General relation
+
+	iitRelation := testIitRelationJson{
+		Pid1: "A",
+		Pid2: "B",
+		Type: "husband"}
+
+	res := testMakeRequest(router, "POST", "/relations", testJsonBody(t, iitRelation))
+
+	assert.Equal(t, http.StatusBadRequest, res.Code)
+
+	resData := testLocationRes(t, res)
+
+	assert.Equal(t, "Relation (A, husband, B) already exists", resData.Message)
+	assert.Equal(t, "http://example.com/relations/1", resData.Location)
+
+	// Case 2: Person specific relation
+
+	itRelation := testItRelationJson{
+		Pid:  "C",
+		Type: "mother"}
+
+	res = testMakeRequest(router, "POST", "/people/B/relations", testJsonBody(t, itRelation))
+
+	assert.Equal(t, http.StatusBadRequest, res.Code)
+
+	resData = testLocationRes(t, res)
+
+	assert.Equal(t, "Relation (B, mother, C) already exists", resData.Message)
+	assert.Equal(t, "http://example.com/relations/2", resData.Location)
 }
