@@ -7,6 +7,19 @@ import (
 	"testing"
 )
 
+type testFullRelationJson struct {
+	Id   int64  `json:"id"`
+	Pid1 string `json:"pid1"`
+	Pid2 string `json:"pid2"`
+	Type string `json:"type"`
+}
+
+func testFullRelationRes(t *testing.T, res *httptest.ResponseRecorder) testFullRelationJson {
+	payload := testFullRelationJson{}
+	testJsonRes(t, res, &payload)
+	return payload
+}
+
 type testIitRelationJson struct {
 	Pid1 string `json:"pid1"`
 	Pid2 string `json:"pid2"`
@@ -389,4 +402,67 @@ func TestCreateRelationRequestValidationError(t *testing.T) {
 	resData = testErrorRes(t, res)
 
 	assert.Equal(t, "Relation (9596, father, 3141) is invalid", resData.Message)
+}
+
+/* Test if the retrieve relation endpoint
+
+   1. Test the success scenario (existing record correctly returned)
+   2. Test the case of invalid source person id format (part of url)
+   3. Test the case of missing relation */
+func TestRetrieveRelationRequest(t *testing.T) {
+	router := setupRouter()
+
+	people = map[string]personRecord{
+		"f6b6": personRecord{
+			Id:      "f6b6",
+			Given:   "Florian",
+			Surname: "Krajewski",
+			Gender:  gMale},
+		"b0dc": personRecord{
+			Id:      "b0dc",
+			Given:   "Julia",
+			Surname: "Kozłowska",
+			Gender:  gFemale},
+		"f870": personRecord{
+			Id:      "f870",
+			Given:   "Krzysztof",
+			Surname: "Krajewski",
+			Gender:  gMale}}
+
+	relations = map[int64]relationRecord{
+		20547: relationRecord{Id: 20547, Pid1: "b0dc", Pid2: "f870", Type: relMother},
+		11646: relationRecord{Id: 11646, Pid1: "f6b6", Pid2: "f870", Type: relFather}}
+
+	// Case 1: Successful retrieval
+
+	res := testMakeRequest(router, "GET", "/relations/20547", nil)
+
+	assert.Equal(t, http.StatusOK, res.Code)
+
+	resData1 := testFullRelationRes(t, res)
+
+	assert.Equal(t, int64(20547), resData1.Id)
+	assert.Equal(t, "b0dc", resData1.Pid1)
+	assert.Equal(t, "f870", resData1.Pid2)
+	assert.Equal(t, "mother", resData1.Type)
+
+	// Case 2: Invalid source person id
+
+	res = testMakeRequest(router, "GET", "/relations/c909debd", nil)
+
+	assert.Equal(t, http.StatusBadRequest, res.Code)
+
+	resData2 := testErrorRes(t, res)
+
+	assert.Equal(t, uriErrorMsg, resData2.Message)
+
+	// Case 3: Missing relation
+
+	res = testMakeRequest(router, "GET", "/relations/55752", nil)
+
+	assert.Equal(t, http.StatusNotFound, res.Code)
+
+	resData3 := testErrorRes(t, res)
+
+	assert.Equal(t, "Unknown relation id", resData3.Message)
 }
