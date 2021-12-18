@@ -15,16 +15,6 @@ type relationPayload struct {
 	Type string `json:"type" binding:"oneof=father mother husband"`
 }
 
-/* Create a relation record from a payload struct
-
-   This function is used by request handlers when communicating with the storage backend.
-
-   Returns:
-   * relation record */
-func (p *relationPayload) toRelationRecord() relationRecord {
-	return relationRecord{p.Id, p.Pid1, p.Pid2, p.Type}
-}
-
 /* Convert a relation record to payload data
 
    This function is used by request handlers when responding with data provided by the storage
