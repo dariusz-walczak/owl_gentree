@@ -620,3 +620,153 @@ func TestRetrieveRelationsRequest(t *testing.T) {
 
 	assert.Equal(t, queryErrorMsg, resData3.Message)
 }
+
+/* Test if the retrieve person relations endpoint works as expected
+
+   1. Test the successful retrieval of the first page (matching records sorted, divided into parts
+      and the page returned)
+   2. Test the successful retrieval of the second page
+   3. Test the handling of the invalid source person id format (part of the url)
+   4. Test the handling of the invalid pagination query variables (too small page size)
+   5. Test the handling of not existing person */
+func TestRetrievePersonRelationsRequest(t *testing.T) {
+	router := setupRouter()
+
+	people = map[string]personRecord{
+		"P01": personRecord{Id: "P01", Given: "Albert", Surname: "Michalski", Gender: gMale},
+		"P02": personRecord{Id: "P02", Given: "Wioletta", Surname: "Piotrowska", Gender: gFemale},
+		"P03": personRecord{Id: "P03", Given: "Adela", Surname: "Michalska", Gender: gFemale},
+		"P04": personRecord{Id: "P04", Given: "Joachim", Surname: "Maciejewski", Gender: gMale},
+		"P05": personRecord{Id: "P05", Given: "Damian", Surname: "Michalski", Gender: gMale},
+		"P06": personRecord{Id: "P06", Given: "Karolina", Surname: "Kołodziej", Gender: gFemale},
+		"P07": personRecord{Id: "P07", Given: "Laura", Surname: "Michalska", Gender: gFemale},
+		"P08": personRecord{Id: "P08", Given: "Czesław", Surname: "Maciejewski", Gender: gMale},
+		"P09": personRecord{Id: "P09", Given: "Gniewomir", Surname: "Michalski", Gender: gFemale},
+		"P10": personRecord{Id: "P10", Given: "Ewa", Surname: "Michalska", Gender: gFemale},
+		"P11": personRecord{Id: "P11", Given: "Patrycja", Surname: "Michalska", Gender: gFemale},
+		"P12": personRecord{Id: "P12", Given: "Monika", Surname: "Maciejewska", Gender: gFemale},
+		"P13": personRecord{Id: "P13", Given: "Marcelina", Surname: "Michalska", Gender: gFemale},
+		"P14": personRecord{Id: "P14", Given: "Ludwik", Surname: "Michalski", Gender: gMale},
+		"P15": personRecord{Id: "P15", Given: "Gustaw", Surname: "Michalski", Gender: gMale},
+		"P16": personRecord{Id: "P16", Given: "Edyta", Surname: "Michalska", Gender: gFemale},
+		"P17": personRecord{Id: "P17", Given: "Barbara", Surname: "Michalska", Gender: gFemale}}
+
+	relations = map[int64]relationRecord{
+		10: relationRecord{Id: 10, Pid1: "P01", Pid2: "P02", Type: relHusband},
+		11: relationRecord{Id: 11, Pid1: "P01", Pid2: "P03", Type: relFather},
+		12: relationRecord{Id: 12, Pid1: "P02", Pid2: "P03", Type: relMother},
+		13: relationRecord{Id: 13, Pid1: "P04", Pid2: "P03", Type: relHusband},
+		14: relationRecord{Id: 14, Pid1: "P01", Pid2: "P05", Type: relFather},
+		15: relationRecord{Id: 15, Pid1: "P02", Pid2: "P05", Type: relMother},
+		16: relationRecord{Id: 16, Pid1: "P05", Pid2: "P06", Type: relHusband},
+		17: relationRecord{Id: 17, Pid1: "P05", Pid2: "P07", Type: relFather},
+		18: relationRecord{Id: 18, Pid1: "P06", Pid2: "P07", Type: relMother},
+		19: relationRecord{Id: 19, Pid1: "P04", Pid2: "P08", Type: relFather},
+		20: relationRecord{Id: 20, Pid1: "P03", Pid2: "P08", Type: relMother},
+		21: relationRecord{Id: 21, Pid1: "P05", Pid2: "P09", Type: relFather},
+		22: relationRecord{Id: 22, Pid1: "P06", Pid2: "P09", Type: relMother},
+		23: relationRecord{Id: 23, Pid1: "P05", Pid2: "P10", Type: relFather},
+		24: relationRecord{Id: 24, Pid1: "P06", Pid2: "P10", Type: relMother},
+		25: relationRecord{Id: 25, Pid1: "P05", Pid2: "P11", Type: relFather},
+		26: relationRecord{Id: 26, Pid1: "P06", Pid2: "P11", Type: relMother},
+		27: relationRecord{Id: 27, Pid1: "P04", Pid2: "P12", Type: relFather},
+		28: relationRecord{Id: 28, Pid1: "P03", Pid2: "P12", Type: relMother},
+		29: relationRecord{Id: 29, Pid1: "P05", Pid2: "P13", Type: relFather},
+		30: relationRecord{Id: 30, Pid1: "P06", Pid2: "P13", Type: relMother},
+		31: relationRecord{Id: 31, Pid1: "P05", Pid2: "P14", Type: relFather},
+		32: relationRecord{Id: 32, Pid1: "P06", Pid2: "P14", Type: relMother},
+		33: relationRecord{Id: 33, Pid1: "P05", Pid2: "P15", Type: relFather},
+		34: relationRecord{Id: 34, Pid1: "P06", Pid2: "P15", Type: relMother},
+		35: relationRecord{Id: 35, Pid1: "P05", Pid2: "P16", Type: relFather},
+		36: relationRecord{Id: 36, Pid1: "P06", Pid2: "P16", Type: relMother},
+		37: relationRecord{Id: 37, Pid1: "P05", Pid2: "P17", Type: relFather},
+		38: relationRecord{Id: 38, Pid1: "P06", Pid2: "P17", Type: relMother}}
+
+	// Case 1: Successful retrieval of the first page
+
+	res := testMakeRequest(router, "GET", "/people/P05/relations?limit=10&page=0", nil)
+
+	assert.Equal(t, http.StatusOK, res.Code)
+
+	resData1 := testRelationListRes(t, res)
+
+	assert.Len(t, resData1.Records, 10)
+
+	assert.Equal(t, int64(14), resData1.Records[0].Id)
+	assert.Equal(t, "P01", resData1.Records[0].Pid1)
+	assert.Equal(t, "P05", resData1.Records[0].Pid2)
+	assert.Equal(t, relFather, resData1.Records[0].Type)
+
+	assert.Equal(t, int64(15), resData1.Records[1].Id)
+	assert.Equal(t, "P02", resData1.Records[1].Pid1)
+	assert.Equal(t, "P05", resData1.Records[1].Pid2)
+	assert.Equal(t, relMother, resData1.Records[1].Type)
+
+	assert.Equal(t, int64(16), resData1.Records[2].Id)
+	assert.Equal(t, "P05", resData1.Records[2].Pid1)
+	assert.Equal(t, "P06", resData1.Records[2].Pid2)
+	assert.Equal(t, relHusband, resData1.Records[2].Type)
+
+	assert.Equal(t, int64(17), resData1.Records[3].Id)
+	assert.Equal(t, "P05", resData1.Records[3].Pid1)
+	assert.Equal(t, "P07", resData1.Records[3].Pid2)
+	assert.Equal(t, relFather, resData1.Records[3].Type)
+
+	assert.Equal(t, int64(21), resData1.Records[4].Id)
+	assert.Equal(t, "P05", resData1.Records[4].Pid1)
+	assert.Equal(t, "P09", resData1.Records[4].Pid2)
+	assert.Equal(t, relFather, resData1.Records[4].Type)
+
+	assert.Equal(t, int64(23), resData1.Records[5].Id)
+	assert.Equal(t, "P05", resData1.Records[5].Pid1)
+	assert.Equal(t, "P10", resData1.Records[5].Pid2)
+	assert.Equal(t, relFather, resData1.Records[5].Type)
+
+	assert.Equal(t, int64(25), resData1.Records[6].Id)
+	assert.Equal(t, "P05", resData1.Records[6].Pid1)
+	assert.Equal(t, "P11", resData1.Records[6].Pid2)
+	assert.Equal(t, relFather, resData1.Records[6].Type)
+
+	assert.Equal(t, int64(29), resData1.Records[7].Id)
+	assert.Equal(t, "P05", resData1.Records[7].Pid1)
+	assert.Equal(t, "P13", resData1.Records[7].Pid2)
+	assert.Equal(t, relFather, resData1.Records[7].Type)
+
+	assert.Equal(t, int64(31), resData1.Records[8].Id)
+	assert.Equal(t, "P05", resData1.Records[8].Pid1)
+	assert.Equal(t, "P14", resData1.Records[8].Pid2)
+	assert.Equal(t, relFather, resData1.Records[8].Type)
+
+	assert.Equal(t, int64(33), resData1.Records[9].Id)
+	assert.Equal(t, "P05", resData1.Records[9].Pid1)
+	assert.Equal(t, "P15", resData1.Records[9].Pid2)
+	assert.Equal(t, relFather, resData1.Records[9].Type)
+
+	assert.Equal(
+		t, "http://example.com/people/P05/relations?limit=10&page=1", resData1.Pagination.NextUrl)
+	assert.Empty(t, resData1.Pagination.PrevUrl)
+
+	// Case 2: Successful retrieval of the second page
+
+	res = testMakeRequest(router, "GET", resData1.Pagination.NextUrl, nil)
+
+	assert.Equal(t, http.StatusOK, res.Code)
+
+	resData2 := testRelationListRes(t, res)
+
+	assert.Len(t, resData2.Records, 2)
+
+	assert.Equal(t, int64(35), resData2.Records[0].Id)
+	assert.Equal(t, "P05", resData2.Records[0].Pid1)
+	assert.Equal(t, "P16", resData2.Records[0].Pid2)
+	assert.Equal(t, relFather, resData2.Records[0].Type)
+
+	assert.Equal(t, int64(37), resData2.Records[1].Id)
+	assert.Equal(t, "P05", resData2.Records[1].Pid1)
+	assert.Equal(t, "P17", resData2.Records[1].Pid2)
+	assert.Equal(t, relFather, resData2.Records[1].Type)
+
+	assert.Empty(t, resData2.Pagination.NextUrl)
+	assert.Equal(
+		t, "http://example.com/people/P05/relations?limit=10&page=0", resData2.Pagination.PrevUrl)
+}
