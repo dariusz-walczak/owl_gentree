@@ -769,4 +769,34 @@ func TestRetrievePersonRelationsRequest(t *testing.T) {
 	assert.Empty(t, resData2.Pagination.NextUrl)
 	assert.Equal(
 		t, "http://example.com/people/P05/relations?limit=10&page=0", resData2.Pagination.PrevUrl)
+
+	// Case 3: Invalid source person id format
+
+	res = testMakeRequest(router, "GET", "/people/%231/relations", nil)
+
+	assert.Equal(t, http.StatusBadRequest, res.Code)
+
+	resData3 := testErrorRes(t, res)
+
+	assert.Equal(t, uriErrorMsg, resData3.Message)
+
+	// Case 4: Too small page size
+
+	res = testMakeRequest(router, "GET", "/people/1/relations?limit=5", nil)
+
+	assert.Equal(t, http.StatusBadRequest, res.Code)
+
+	resData4 := testErrorRes(t, res)
+
+	assert.Equal(t, queryErrorMsg, resData4.Message)
+
+	// Case 5: Non-existing person
+
+	res = testMakeRequest(router, "GET", "/people/P00/relations", nil)
+
+	assert.Equal(t, http.StatusNotFound, res.Code)
+
+	resData5 := testErrorRes(t, res)
+
+	assert.Equal(t, "Unknown person id", resData5.Message)
 }
