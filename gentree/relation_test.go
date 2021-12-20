@@ -455,7 +455,17 @@ func TestDeleteRelationRequest(t *testing.T) {
 
 	assert.Equal(t, "Relation deleted", resData.Message)
 
-	// TODO: people map
+	assert.Len(t, relations, 2)
+
+	assert.Equal(t, int64(88128), relations[88128].Id)
+	assert.Equal(t, "9c", relations[88128].Pid1)
+	assert.Equal(t, "b4", relations[88128].Pid2)
+	assert.Equal(t, relMother, relations[88128].Type)
+
+	assert.Equal(t, int64(86917), relations[86917].Id)
+	assert.Equal(t, "cf", relations[86917].Pid1)
+	assert.Equal(t, "b4", relations[86917].Pid2)
+	assert.Equal(t, relFather, relations[86917].Type)
 
 	// Case 2: Invalid relation id
 
