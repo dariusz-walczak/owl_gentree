@@ -24,6 +24,7 @@ func setupRouter() *gin.Engine {
 
 	r.POST("/relations", createRelation)
 	r.GET("/relations", retrieveRelations)
+	r.DELETE("/relations/:rid", deleteRelation)
 	r.GET("/relations/:rid", retrieveRelation)
 	r.POST("/people/:pid/relations", createPersonRelation)
 	r.GET("/people/:pid/relations", retrievePersonRelations)
