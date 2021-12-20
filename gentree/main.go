@@ -16,18 +16,20 @@ func setupRouter() *gin.Engine {
 	r := gin.Default()
 	r.Use(location.Default())
 
-	r.POST("/people", createPerson)
+	r.DELETE("/people/:pid", deletePerson)
 	r.GET("/people", retrievePeople)
 	r.GET("/people/:pid", retrievePerson)
-	r.DELETE("/people/:pid", deletePerson)
+	r.POST("/people", createPerson)
 	r.PUT("/people/:pid", replacePerson)
 
-	r.POST("/relations", createRelation)
-	r.GET("/relations", retrieveRelations)
 	r.DELETE("/relations/:rid", deleteRelation)
+	r.GET("/relations", retrieveRelations)
 	r.GET("/relations/:rid", retrieveRelation)
-	r.POST("/people/:pid/relations", createPersonRelation)
+	r.POST("/relations", createRelation)
+	r.PUT("/relations/:rid", replaceRelation)
+
 	r.GET("/people/:pid/relations", retrievePersonRelations)
+	r.POST("/people/:pid/relations", createPersonRelation)
 
 	return r
 }

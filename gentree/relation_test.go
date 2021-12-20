@@ -478,10 +478,152 @@ func TestDeleteRelationRequest(t *testing.T) {
 	assert.Equal(t, "Unknown relation id", resData.Message)
 }
 
-/* Test if the retrieve relation endpoint
+/* Test the replace relation endpoint
+
+   1. Test the success scenario (existing record correctly replaced)
+   2. Test the case of invalid relation id format (part of url)
+   3. Test the case of missing relation
+   4. Test the case of invalid person id (payload) */
+func TestReplaceRelationRequest(t *testing.T) {
+	router := setupRouter()
+
+	people = map[string]personRecord{
+		"A": personRecord{
+			Id:      "A",
+			Given:   "Magda",
+			Surname: "Krawczyk",
+			Gender:  gFemale},
+		"B": personRecord{
+			Id:      "B",
+			Given:   "Edyta",
+			Surname: "Andrzejewska",
+			Gender:  gFemale},
+		"C": personRecord{
+			Id:      "C",
+			Given:   "Konstanty",
+			Surname: "Andrzejewski",
+			Gender:  gMale},
+		"D": personRecord{
+			Id:      "D",
+			Given:   "Dorian",
+			Surname: "Czarnecki",
+			Gender:  gMale},
+	}
+
+	relations = map[int64]relationRecord{
+		1: relationRecord{Id: 1, Pid1: "A", Pid2: "B", Type: relMother},
+		2: relationRecord{Id: 2, Pid1: "C", Pid2: "B", Type: relFather}}
+
+	// Case 1: Replacement success
+
+	iitRelation := testIitRelationJson{
+		Pid1: "D",
+		Pid2: "B",
+		Type: relFather}
+
+	res := testMakeRequest(router, "PUT", "/relations/2", testJsonBody(t, iitRelation))
+
+	assert.Equal(t, http.StatusOK, res.Code)
+
+	resData := testErrorRes(t, res)
+
+	assert.Equal(t, "Relation record replaced", resData.Message)
+
+	assert.Len(t, relations, 2)
+
+	assert.Equal(t, int64(1), relations[1].Id)
+	assert.Equal(t, "A", relations[1].Pid1)
+	assert.Equal(t, "B", relations[1].Pid2)
+	assert.Equal(t, relMother, relations[1].Type)
+
+	assert.Equal(t, int64(2), relations[2].Id)
+	assert.Equal(t, "D", relations[2].Pid1)
+	assert.Equal(t, "B", relations[2].Pid2)
+	assert.Equal(t, relFather, relations[2].Type)
+
+	// Case 2: Invalid relation id
+
+	iitRelation = testIitRelationJson{
+		Pid1: "C",
+		Pid2: "B",
+		Type: relFather}
+
+	res = testMakeRequest(router, "PUT", "/relations/R001", testJsonBody(t, iitRelation))
+
+	assert.Equal(t, http.StatusBadRequest, res.Code)
+
+	resData = testErrorRes(t, res)
+
+	assert.Equal(t, uriErrorMsg, resData.Message)
+
+	assert.Len(t, relations, 2)
+
+	assert.Equal(t, int64(1), relations[1].Id)
+	assert.Equal(t, "A", relations[1].Pid1)
+	assert.Equal(t, "B", relations[1].Pid2)
+	assert.Equal(t, relMother, relations[1].Type)
+
+	assert.Equal(t, int64(2), relations[2].Id)
+	assert.Equal(t, "D", relations[2].Pid1)
+	assert.Equal(t, "B", relations[2].Pid2)
+	assert.Equal(t, relFather, relations[2].Type)
+
+	// Case 3: Missing relation
+
+	// iitRelation assignment skipped intentionally (the one defined for the 2nd case is ok)
+
+	res = testMakeRequest(router, "PUT", "/relations/3", testJsonBody(t, iitRelation))
+
+	assert.Equal(t, http.StatusNotFound, res.Code)
+
+	resData = testErrorRes(t, res)
+
+	assert.Equal(t, "Unknown relation id", resData.Message)
+
+	assert.Len(t, relations, 2)
+
+	assert.Equal(t, int64(1), relations[1].Id)
+	assert.Equal(t, "A", relations[1].Pid1)
+	assert.Equal(t, "B", relations[1].Pid2)
+	assert.Equal(t, relMother, relations[1].Type)
+
+	assert.Equal(t, int64(2), relations[2].Id)
+	assert.Equal(t, "D", relations[2].Pid1)
+	assert.Equal(t, "B", relations[2].Pid2)
+	assert.Equal(t, relFather, relations[2].Type)
+
+	// Case 4: Invalid person id
+
+	iitRelation = testIitRelationJson{
+		Pid1: "",
+		Pid2: "B",
+		Type: relFather}
+
+	res = testMakeRequest(router, "PUT", "/relations/2", testJsonBody(t, iitRelation))
+
+	assert.Equal(t, http.StatusBadRequest, res.Code)
+
+	resData = testErrorRes(t, res)
+
+	assert.Equal(t, payloadErrorMsg, resData.Message)
+
+	assert.Len(t, relations, 2)
+
+	assert.Equal(t, int64(1), relations[1].Id)
+	assert.Equal(t, "A", relations[1].Pid1)
+	assert.Equal(t, "B", relations[1].Pid2)
+	assert.Equal(t, relMother, relations[1].Type)
+
+	assert.Equal(t, int64(2), relations[2].Id)
+	assert.Equal(t, "D", relations[2].Pid1)
+	assert.Equal(t, "B", relations[2].Pid2)
+	assert.Equal(t, relFather, relations[2].Type)
+}
+
+/* Test the retrieve relation endpoint
 
    1. Test the success scenario (existing record correctly returned)
-   2. Test the case of invalid source person id format (part of url)
+   2. Test the case of invalid relation id format (part of url)
    3. Test the case of missing relation */
 func TestRetrieveRelationRequest(t *testing.T) {
 	router := setupRouter()
@@ -520,7 +662,7 @@ func TestRetrieveRelationRequest(t *testing.T) {
 	assert.Equal(t, "f870", resData1.Pid2)
 	assert.Equal(t, "mother", resData1.Type)
 
-	// Case 2: Invalid source person id
+	// Case 2: Invalid relation id
 
 	res = testMakeRequest(router, "GET", "/relations/c909debd", nil)
 

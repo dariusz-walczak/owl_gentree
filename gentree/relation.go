@@ -58,7 +58,7 @@ type itRelationPayload struct {
 
    Params:
    * sourcePid - id of the relation source person (not included in the payload) */
-func (p *itRelationPayload) toRelationRecord(sourcePid string) relationRecord {
+func (p *itRelationPayload) toRecord(sourcePid string) relationRecord {
 	return relationRecord{0, sourcePid, p.Pid, p.Type}
 }
 
@@ -74,8 +74,8 @@ type iitRelationPayload struct {
 /* Create a relation record from a payload struct
 
    This function is used by request handlers when communicating with the storage backend. */
-func (p *iitRelationPayload) toRelationRecord() relationRecord {
-	return relationRecord{0, p.Pid1, p.Pid2, p.Type}
+func (p *iitRelationPayload) toRecord(rid int64) relationRecord {
+	return relationRecord{rid, p.Pid1, p.Pid2, p.Type}
 }
 
 /* The structure used to extract relation id from a URI */
@@ -191,7 +191,7 @@ func createRelation(c *gin.Context) {
 		return
 	}
 
-	doCreateRelation(c, payload.toRelationRecord())
+	doCreateRelation(c, payload.toRecord(0))
 }
 
 /* Handle a create relation request
@@ -219,7 +219,7 @@ func createPersonRelation(c *gin.Context) {
 		return
 	}
 
-	doCreateRelation(c, payload.toRelationRecord(params.Pid))
+	doCreateRelation(c, payload.toRecord(params.Pid))
 }
 
 /* Delete a relation
@@ -254,6 +254,49 @@ func deleteRelation(c *gin.Context) {
 	log.Infof(
 		"Deleted the requested relation (%d) record:  %s, %s, %s",
 		relation.Id, relation.Pid1, relation.Type, relation.Pid2)
+}
+
+/* Replace a relation
+
+   The function will extract the relation id from the request URI (specifyRelationUri), and the new
+   relation data from the request payload (iitRelationPayload) */
+/* */
+func replaceRelation(c *gin.Context) {
+	log.Trace("Entry checkpoint")
+
+	var params specifyRelationUri
+
+	if err := c.ShouldBindUri(&params); err != nil {
+		log.Infof("Uri parameters unmarshalling error: %s", err)
+		c.JSON(http.StatusBadRequest, gin.H{"message": uriErrorMsg})
+		return
+	}
+
+	_, found, err := queryRelationById(params.Rid)
+
+	if !found {
+		log.Infof("The relation with given id (%d) doesn't exist", params.Rid)
+		c.JSON(http.StatusNotFound, gin.H{"message": "Unknown relation id"})
+		return
+	} else if err != nil {
+		log.Errorf("An error occurred during the relation retrieval attempt (%s)", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"message": internalErrorMsg})
+		return
+	}
+
+	var relation iitRelationPayload
+
+	if err := c.ShouldBindJSON(&relation); err != nil {
+		log.Infof("Relation data unmarshalling error: %s", err)
+		c.JSON(http.StatusBadRequest, gin.H{"message": payloadErrorMsg})
+		return
+	}
+
+	relations[params.Rid] = relation.toRecord(params.Rid)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Relation record replaced"})
+
+	log.Infof("Replaced the relation (%d) record", params.Rid)
 }
 
 /* Retrieve a relation
