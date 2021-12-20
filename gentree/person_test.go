@@ -149,8 +149,12 @@ func TestPersonListToPayload(t *testing.T) {
 	assert.Equal(t, p[2].Gender, gFemale)
 }
 
-/* Check if the delete person handler correctly removes the specified person */
-func TestDeletePersonRequestSuccess(t *testing.T) {
+/* Test the delete person endpoint
+
+   1. Check the success scenario (existing record deleted)
+   2. Check the case of invalid person id format (part of the url)
+   3. Check the case of missing person */
+func TestDeletePersonRequest(t *testing.T) {
 	router := setupRouter()
 
 	people = map[string]personRecord{
@@ -170,6 +174,8 @@ func TestDeletePersonRequestSuccess(t *testing.T) {
 			Surname: "Nowak",
 			Gender:  gFemale}}
 
+	// Case 1: Successful deletion
+
 	res := testMakeRequest(router, "DELETE", "/people/4a98ebf4", nil)
 
 	assert.Equal(t, http.StatusOK, res.Code)
@@ -187,76 +193,36 @@ func TestDeletePersonRequestSuccess(t *testing.T) {
 	assert.Equal(t, "Bernadetta", people["d910690c"].Given)
 	assert.Equal(t, "Nowak", people["d910690c"].Surname)
 	assert.Equal(t, gFemale, people["d910690c"].Gender)
-}
 
-/* Test if the delete person endpoint handles invalid person id format correctly */
-func TestDeletePersonRequestError(t *testing.T) {
-	router := setupRouter()
+	// Case 2: Invalid person id
 
-	people = map[string]personRecord{
-		"147591d7": personRecord{
-			Id:      "147591d7",
-			Given:   "Izabela",
-			Surname: "Chmielewska",
-			Gender:  gFemale},
-		"f94196b8": personRecord{
-			Id:      "f94196b8",
-			Given:   "Maksymilian",
-			Surname: "Mazur",
-			Gender:  gMale}}
-
-	res := testMakeRequest(router, "DELETE", "/people/100$", nil)
+	res = testMakeRequest(router, "DELETE", "/people/100$", nil)
 
 	assert.Equal(t, http.StatusBadRequest, res.Code)
 
-	resData := testErrorRes(t, res)
+	resData = testErrorRes(t, res)
 
 	assert.Equal(t, uriErrorMsg, resData.Message)
 
 	assert.Len(t, people, 2)
-	assert.Equal(t, "147591d7", people["147591d7"].Id)
-	assert.Equal(t, "Izabela", people["147591d7"].Given)
-	assert.Equal(t, "Chmielewska", people["147591d7"].Surname)
-	assert.Equal(t, gFemale, people["147591d7"].Gender)
-	assert.Equal(t, "f94196b8", people["f94196b8"].Id)
-	assert.Equal(t, "Maksymilian", people["f94196b8"].Given)
-	assert.Equal(t, "Mazur", people["f94196b8"].Surname)
-	assert.Equal(t, gMale, people["f94196b8"].Gender)
-}
+	assert.Equal(t, "162d2a92", people["162d2a92"].Id)
+	assert.Equal(t, "Kazimierz", people["162d2a92"].Given)
+	assert.Equal(t, "Marciniak", people["162d2a92"].Surname)
+	assert.Equal(t, gMale, people["162d2a92"].Gender)
+	assert.Equal(t, "d910690c", people["d910690c"].Id)
+	assert.Equal(t, "Bernadetta", people["d910690c"].Given)
+	assert.Equal(t, "Nowak", people["d910690c"].Surname)
+	assert.Equal(t, gFemale, people["d910690c"].Gender)
 
-/* Test if the delete person endpoint handles the missing person case correctly */
-func TestDeletePersonRequestMissing(t *testing.T) {
-	router := setupRouter()
+	// Case 3: Missing person
 
-	people = map[string]personRecord{
-		"814b7104": personRecord{
-			Id:      "814b7104",
-			Given:   "Денис Афанасович",
-			Surname: "Сергеев",
-			Gender:  gMale},
-		"d7f77b75": personRecord{
-			Id:      "d7f77b75",
-			Given:   "Ольга Якововна",
-			Surname: "Ивашов",
-			Gender:  gFemale}}
-
-	res := testMakeRequest(router, "DELETE", "/people/23a1913b", nil)
+	res = testMakeRequest(router, "DELETE", "/people/23a1913b", nil)
 
 	assert.Equal(t, http.StatusNotFound, res.Code)
 
-	resData := testErrorRes(t, res)
+	resData = testErrorRes(t, res)
 
 	assert.Equal(t, "Unknown person id", resData.Message)
-
-	assert.Len(t, people, 2)
-	assert.Equal(t, "814b7104", people["814b7104"].Id)
-	assert.Equal(t, "Денис Афанасович", people["814b7104"].Given)
-	assert.Equal(t, "Сергеев", people["814b7104"].Surname)
-	assert.Equal(t, gMale, people["814b7104"].Gender)
-	assert.Equal(t, "d7f77b75", people["d7f77b75"].Id)
-	assert.Equal(t, "Ольга Якововна", people["d7f77b75"].Given)
-	assert.Equal(t, "Ивашов", people["d7f77b75"].Surname)
-	assert.Equal(t, gFemale, people["d7f77b75"].Gender)
 }
 
 func TestCreatePersonRequestSuccess(t *testing.T) {
