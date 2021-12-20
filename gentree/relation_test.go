@@ -100,6 +100,8 @@ func TestCreateRelationRequestSuccess(t *testing.T) {
 			Surname: "Cieślak",
 			Gender:  gMale}}
 
+	relations = map[int64]relationRecord{}
+
 	// Case 1: General father relation
 
 	iitRelation := testIitRelationJson{
