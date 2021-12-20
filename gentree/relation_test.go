@@ -415,6 +415,69 @@ func TestCreateRelationRequestValidationError(t *testing.T) {
 	assert.Equal(t, "Relation (9596, father, 3141) is invalid", resData.Message)
 }
 
+/* Test the delete relation endpoint
+
+   1. Check the success scenario (existing record correctly deleted)
+   2. Check the case of invalid relation id format (part of the url)
+   3. Check the case of missing relation */
+func TestDeleteRelationRequest(t *testing.T) {
+	router := setupRouter()
+
+	people = map[string]personRecord{
+		"cf": personRecord{
+			Id:      "cf",
+			Given:   "Bartłomiej",
+			Surname: "Sokołowski",
+			Gender:  gMale},
+		"9c": personRecord{
+			Id:      "9c",
+			Given:   "Celina",
+			Surname: "Kamińska",
+			Gender:  gFemale},
+		"b4": personRecord{
+			Id:      "b4",
+			Given:   "Lidia",
+			Surname: "Sokołowska",
+			Gender:  gFemale}}
+
+	relations = map[int64]relationRecord{
+		88128: relationRecord{Id: 88128, Pid1: "9c", Pid2: "b4", Type: relMother},
+		86917: relationRecord{Id: 86917, Pid1: "cf", Pid2: "b4", Type: relFather},
+		51235: relationRecord{Id: 51235, Pid1: "cf", Pid2: "9c", Type: relHusband}}
+
+	// Case 1: Successful deletion
+
+	res := testMakeRequest(router, "DELETE", "/relations/51235", nil)
+
+	assert.Equal(t, http.StatusOK, res.Code)
+
+	resData := testErrorRes(t, res)
+
+	assert.Equal(t, "Relation deleted", resData.Message)
+
+	// TODO: people map
+
+	// Case 2: Invalid relation id
+
+	res = testMakeRequest(router, "DELETE", "/relations/e90252c6", nil)
+
+	assert.Equal(t, http.StatusBadRequest, res.Code)
+
+	resData = testErrorRes(t, res)
+
+	assert.Equal(t, uriErrorMsg, resData.Message)
+
+	// Case 3: Missing relation
+
+	res = testMakeRequest(router, "DELETE", "/relations/28944", nil)
+
+	assert.Equal(t, http.StatusNotFound, res.Code)
+
+	resData = testErrorRes(t, res)
+
+	assert.Equal(t, "Unknown relation id", resData.Message)
+}
+
 /* Test if the retrieve relation endpoint
 
    1. Test the success scenario (existing record correctly returned)

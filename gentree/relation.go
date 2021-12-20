@@ -222,6 +222,40 @@ func createPersonRelation(c *gin.Context) {
 	doCreateRelation(c, payload.toRelationRecord(params.Pid))
 }
 
+/* Delete a relation
+
+   The function will extract the relation id from the request URI (specifyRelationUri) */
+func deleteRelation(c *gin.Context) {
+	log.Trace("Entry checkpoint")
+
+	var params specifyRelationUri
+
+	if err := c.ShouldBindUri(&params); err != nil {
+		log.Infof("Uri parameters unmarshalling error: %s", err)
+		c.JSON(http.StatusBadRequest, gin.H{"message": uriErrorMsg})
+		return
+	}
+
+	relation, found, err := queryRelationById(params.Rid)
+
+	if !found {
+		log.Infof("The relation with given id (%d) doesn't exist", params.Rid)
+		c.JSON(http.StatusNotFound, gin.H{"message": "Unknown relation id"})
+		return
+	} else if err != nil {
+		log.Errorf("An error occurred during the relation retrieval attempt (%s)", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"message": internalErrorMsg})
+		return
+	}
+
+	delete(relations, params.Rid)
+	c.JSON(http.StatusOK, gin.H{"message": "Relation deleted"})
+
+	log.Infof(
+		"Deleted the requested relation (%d) record:  %s, %s, %s",
+		relation.Id, relation.Pid1, relation.Type, relation.Pid2)
+}
+
 /* Retrieve a relation
 
    The function will extract the relation id from the request URI (specifyRelationUri) */
