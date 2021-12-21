@@ -278,9 +278,22 @@ func deletePerson(c *gin.Context) {
 		return
 	}
 
+	delCnt, err := deleteRelationsByPerson(params.Pid)
+
+	if err != nil {
+		log.Errorf("An error occurred during relations deletion attempt (%s)", err)
+
+		c.JSON(http.StatusInternalServerError, gin.H{"message": internalErrorMsg})
+		return
+	}
+
 	delete(people, params.Pid)
 
-	c.JSON(http.StatusOK, gin.H{"message": "Person deleted"})
+	c.JSON(http.StatusOK, gin.H{
+		"message":              "Person deleted",
+		"deleted_relation_cnt": delCnt})
 
-	log.Infof("Deleted the requested person record (%s)", params.Pid)
+	log.Infof(
+		"Deleted the requested person record (%s) and %d associated relation records",
+		params.Pid, delCnt)
 }

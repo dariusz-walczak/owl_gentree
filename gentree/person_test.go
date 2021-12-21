@@ -174,15 +174,32 @@ func TestDeletePersonRequest(t *testing.T) {
 			Surname: "Nowak",
 			Gender:  gFemale}}
 
+	relations = map[int64]relationRecord{
+		1: relationRecord{Id: 1, Pid1: "4a98ebf4", Pid2: "d910690c", Type: relHusband},
+		2: relationRecord{Id: 2, Pid1: "d910690c", Pid2: "162d2a92", Type: relMother},
+		3: relationRecord{Id: 3, Pid1: "4a98ebf4", Pid2: "162d2a92", Type: relFather}}
+
 	// Case 1: Successful deletion
 
 	res := testMakeRequest(router, "DELETE", "/people/4a98ebf4", nil)
 
 	assert.Equal(t, http.StatusOK, res.Code)
 
-	resData := testErrorRes(t, res)
+	type testSuccessJson struct {
+		Message string `json:"message"`
+		Count   int64  `json:"deleted_relation_cnt"`
+	}
+
+	testSuccessRes := func(t *testing.T, res *httptest.ResponseRecorder) testSuccessJson {
+		payload := testSuccessJson{}
+		testJsonRes(t, res, &payload)
+		return payload
+	}
+
+	resData := testSuccessRes(t, res)
 
 	assert.Equal(t, "Person deleted", resData.Message)
+	assert.Equal(t, int64(2), resData.Count)
 
 	assert.Len(t, people, 2)
 	assert.Equal(t, "162d2a92", people["162d2a92"].Id)
@@ -194,15 +211,21 @@ func TestDeletePersonRequest(t *testing.T) {
 	assert.Equal(t, "Nowak", people["d910690c"].Surname)
 	assert.Equal(t, gFemale, people["d910690c"].Gender)
 
+	assert.Len(t, relations, 1)
+	assert.Equal(t, int64(2), relations[2].Id)
+	assert.Equal(t, "d910690c", relations[2].Pid1)
+	assert.Equal(t, "162d2a92", relations[2].Pid2)
+	assert.Equal(t, relMother, relations[2].Type)
+
 	// Case 2: Invalid person id
 
 	res = testMakeRequest(router, "DELETE", "/people/100$", nil)
 
 	assert.Equal(t, http.StatusBadRequest, res.Code)
 
-	resData = testErrorRes(t, res)
+	resDataErr := testErrorRes(t, res)
 
-	assert.Equal(t, uriErrorMsg, resData.Message)
+	assert.Equal(t, uriErrorMsg, resDataErr.Message)
 
 	assert.Len(t, people, 2)
 	assert.Equal(t, "162d2a92", people["162d2a92"].Id)
@@ -220,9 +243,9 @@ func TestDeletePersonRequest(t *testing.T) {
 
 	assert.Equal(t, http.StatusNotFound, res.Code)
 
-	resData = testErrorRes(t, res)
+	resDataErr = testErrorRes(t, res)
 
-	assert.Equal(t, "Unknown person id", resData.Message)
+	assert.Equal(t, "Unknown person id", resDataErr.Message)
 }
 
 func TestCreatePersonRequestSuccess(t *testing.T) {

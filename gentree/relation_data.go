@@ -29,6 +29,29 @@ type relationList []relationRecord
 
 var relations = map[int64]relationRecord{}
 
+/* Delete all the relation records associated with the given person
+
+   Params:
+   * pid - the person identifier
+
+   Return:
+   * number of deleted records
+   * error (if occurred and nil otherwise) */
+func deleteRelationsByPerson(pid string) (int64, error) {
+	log.Debugf("Deleting all the relations of the given person (%s)", pid)
+
+	var num int64 = 0
+
+	for k, r := range relations {
+		if (r.Pid1 == pid) || (r.Pid2 == pid) {
+			delete(relations, k)
+			num++
+		}
+	}
+
+	return num, nil
+}
+
 /* Generate a new, unique relation id
 
    The function generates a random, unique identifier using a cryptographic function. It always
@@ -82,7 +105,9 @@ func queryRelationById(id int64) (relationRecord, bool, error) {
 
 /* Query all the relation records associated with the given person
 
-   All the existing records will be returned if the person identifier is an empty string
+   The function will return all the existing records if the person identifier is an empty string
+   (thanks to that, the handler returning all the relations can reuse the result paging
+   functionality)
 
    Params:
    * pid - the person identifier (ignored if it is an empty string)
@@ -94,7 +119,7 @@ func queryRelationById(id int64) (relationRecord, bool, error) {
      record count field updated otherwise)
    * error (if occurred and nil otherwise) */
 func queryRelationsByPerson(pid string, pag paginationData) (relationList, paginationData, error) {
-	log.Debugf("Retrieving all the relations of given person (%s)", pid)
+	log.Debugf("Retrieving all the relations of the given person (%s)", pid)
 
 	if err := pag.validate(); err != nil {
 		return []relationRecord{}, paginationData{}, err
