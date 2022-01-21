@@ -246,7 +246,7 @@ func retrievePeople(c *gin.Context) {
 		"records":    people.toPayload(),
 	})
 
-	log.Infof("Found %d persons", len(relations))
+	log.Infof("Found %d person(s)", len(people))
 }
 
 /* Handle a delete person request
