@@ -11,7 +11,7 @@ COPY  gentree/*.go ./
 RUN CGO_ENABLED=0 go build
 
 
-FROM golang
+FROM alpine
 
 EXPOSE 8080/tcp
 
