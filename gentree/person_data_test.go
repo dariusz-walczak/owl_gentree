@@ -40,7 +40,7 @@ func TestQueryPeople1Simple(t *testing.T) {
 		"P01": personRecord{"P01", "Jan", "Kowalski", gMale},
 	}
 
-	list, pagResult, err := queryPeople(paginationData{0, 10, 0, 10, 10})
+	list, pagResult, err := queryPeople(paginationData{0, 10, 0, 10, 10}, personFilter{})
 
 	assert.Len(t, list, 6)
 	// The result table should be sorted by the person id field:
@@ -65,7 +65,8 @@ func TestQueryPeopleEmpty(t *testing.T) {
 			PageSize:    10,
 			TotalCnt:    -1, // Should be ignored and overridden by the queryPeople function
 			minPageSize: 10,
-			maxPageSize: 10})
+			maxPageSize: 10},
+		personFilter{})
 
 	assert.Len(t, list, 0)
 	assert.Equal(t, pagResult.PageIdx, 0)
@@ -85,7 +86,8 @@ func TestQueryPeoplePaging(t *testing.T) {
 			PageSize:    2,
 			TotalCnt:    -1, // Should be ignored and overridden by the queryPeople function
 			minPageSize: 2,
-			maxPageSize: 2})
+			maxPageSize: 2},
+		personFilter{})
 
 	assert.Len(t, list, 1)
 	assert.Equal(t, list[0].Id, "P01")
@@ -100,7 +102,8 @@ func TestQueryPeoplePaging(t *testing.T) {
 			PageSize:    2,
 			TotalCnt:    -1, // Should be ignored and overridden by the queryPeople function
 			minPageSize: 2,
-			maxPageSize: 2})
+			maxPageSize: 2},
+		personFilter{})
 
 	assert.Len(t, list, 0)
 	assert.Equal(t, pagResult.PageIdx, 1)
@@ -116,7 +119,8 @@ func TestQueryPeoplePaging(t *testing.T) {
 			PageSize:    2,
 			TotalCnt:    -1, // Should be ignored and overridden by the queryPeople function
 			minPageSize: 2,
-			maxPageSize: 2})
+			maxPageSize: 2},
+		personFilter{})
 
 	assert.Len(t, list, 2)
 	assert.Equal(t, list[0].Id, "P01")
@@ -132,7 +136,8 @@ func TestQueryPeoplePaging(t *testing.T) {
 			PageSize:    2,
 			TotalCnt:    -1, // Should be ignored and overridden by the queryPeople function
 			minPageSize: 2,
-			maxPageSize: 2})
+			maxPageSize: 2},
+		personFilter{})
 
 	assert.Len(t, list, 0)
 	assert.Equal(t, pagResult.PageIdx, 1)
@@ -148,7 +153,8 @@ func TestQueryPeoplePaging(t *testing.T) {
 			PageSize:    2,
 			TotalCnt:    -1, // Should be ignored and overridden by the queryPeople function
 			minPageSize: 2,
-			maxPageSize: 2})
+			maxPageSize: 2},
+		personFilter{})
 
 	assert.Len(t, list, 2)
 	assert.Equal(t, list[0].Id, "P01")
@@ -164,7 +170,8 @@ func TestQueryPeoplePaging(t *testing.T) {
 			PageSize:    2,
 			TotalCnt:    -1, // Should be ignored and overridden by the queryPeople function
 			minPageSize: 2,
-			maxPageSize: 2})
+			maxPageSize: 2},
+		personFilter{})
 
 	assert.Len(t, list, 1)
 	assert.Equal(t, list[0].Id, "P04")
@@ -179,7 +186,8 @@ func TestQueryPeoplePaging(t *testing.T) {
 			PageSize:    2,
 			TotalCnt:    -1, // Should be ignored and overridden by the queryPeople function
 			minPageSize: 2,
-			maxPageSize: 2})
+			maxPageSize: 2},
+		personFilter{})
 
 	assert.Len(t, list, 0)
 	assert.Equal(t, pagResult.PageIdx, 2)
@@ -196,7 +204,8 @@ func TestQueryPeoplePaging(t *testing.T) {
 			PageSize:    2,
 			TotalCnt:    -1, // Should be ignored and overridden by the queryPeople function
 			minPageSize: 2,
-			maxPageSize: 2})
+			maxPageSize: 2},
+		personFilter{})
 
 	assert.Len(t, list, 2)
 	assert.Equal(t, list[0].Id, "P01")
@@ -212,7 +221,8 @@ func TestQueryPeoplePaging(t *testing.T) {
 			PageSize:    2,
 			TotalCnt:    -1, // Should be ignored and overridden by the queryPeople function
 			minPageSize: 2,
-			maxPageSize: 2})
+			maxPageSize: 2},
+		personFilter{})
 
 	assert.Len(t, list, 2)
 	assert.Equal(t, list[0].Id, "P03")
@@ -228,7 +238,8 @@ func TestQueryPeoplePaging(t *testing.T) {
 			PageSize:    2,
 			TotalCnt:    -1, // Should be ignored and overridden by the queryPeople function
 			minPageSize: 2,
-			maxPageSize: 2})
+			maxPageSize: 2},
+		personFilter{})
 
 	assert.Len(t, list, 0)
 	assert.Equal(t, pagResult.PageIdx, 2)
@@ -251,7 +262,8 @@ func TestQueryPeopleValidation(t *testing.T) {
 			PageSize:    2,
 			TotalCnt:    -1,
 			minPageSize: 2,
-			maxPageSize: 2})
+			maxPageSize: 2},
+		personFilter{})
 
 	assert.Len(t, list, 0)
 	assert.Empty(t, pagResult.PageIdx)
@@ -266,7 +278,8 @@ func TestQueryPeopleValidation(t *testing.T) {
 			PageSize:    2,
 			TotalCnt:    -1,
 			minPageSize: 10,
-			maxPageSize: 100})
+			maxPageSize: 100},
+		personFilter{})
 
 	assert.Len(t, list, 0)
 	assert.Empty(t, pagResult.PageIdx)
@@ -282,7 +295,8 @@ func TestQueryPeopleValidation(t *testing.T) {
 			PageSize:    200,
 			TotalCnt:    -1,
 			minPageSize: 50,
-			maxPageSize: 90})
+			maxPageSize: 90},
+		personFilter{})
 
 	assert.Len(t, list, 0)
 	assert.Empty(t, pagResult.PageIdx)

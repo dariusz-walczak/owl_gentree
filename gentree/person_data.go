@@ -24,6 +24,16 @@ type personList []personRecord
 
 var people = map[string]personRecord{}
 
+/* Person filter specification */
+type personIdsFilter struct {
+	Value []string
+	Enabled bool
+}
+
+type personFilter struct {
+	Ids personIdsFilter
+}
+
 /* Retrieve a person record by id
  * Returns:
  * * Person record structure (uninitialized if not found)
@@ -43,17 +53,18 @@ func getPerson(pid string) (personRecord, bool, error) {
 	return person, true, nil
 }
 
-/* Query all the person records
+/* Query person records
 
    Params:
    * pag - pagination data specifying the range of records to be returned
+   * filter - record filter specification
 
    Return:
    * slice of person records (empty if an error occurred)
    * updated pagination data (empty if an error occurred; copy of the pag parameter with the total
      record count field updated otherwise)
    * error (if occurred and nil otherwise) */
-func queryPeople(pag paginationData) (personList, paginationData, error) {
+func queryPeople(pag paginationData, filter personFilter) (personList, paginationData, error) {
 	log.Debugf("Retrieving all the people")
 
 	if err := pag.validate(); err != nil {
@@ -64,7 +75,9 @@ func queryPeople(pag paginationData) (personList, paginationData, error) {
 	sorted := make(personList, 0, len(people))
 
 	for _, r := range people {
-		sorted = append(sorted, r)
+		if !filter.Ids.Enabled || containsStr(filter.Ids.Value, r.Id) {
+			sorted = append(sorted, r)
+		}
 	}
 
 	sort.Slice(sorted, func(i, j int) bool { return sorted[i].Id < sorted[j].Id })

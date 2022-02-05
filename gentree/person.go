@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"net/http"
+	"net/url"
 )
 
 /* Intermediate structure used to bind person payload and respond with person data */
@@ -14,6 +15,30 @@ type fullPersonPayload struct {
 	Given   string `json:"given_names"`
 	Surname string `json:"surname"`
 	Gender  string `json:"gender" binding:"isdefault|oneof=male female unknown"`
+}
+
+/* This structure is used to extract optional person search parameters from a request query */
+type personSearchQuery struct {
+	Pids []string `form:"pids"`
+}
+
+/* Create a person filter from a person search query
+ *
+ * Parameters:
+ * * v url query (e.g. returned by Query method of the URL type)
+ */
+func (q *personSearchQuery) toFilter(v url.Values) personFilter {
+	f := personFilter {
+		personIdsFilter{ append(make([]string, 0, len(q.Pids)), q.Pids...), false },
+	}
+
+	for name := range v {
+		if name == "pids" {
+			f.Ids.Enabled = true
+		}
+	}
+
+	return f
 }
 
 /* Create a person record from a full person payload
@@ -213,6 +238,7 @@ func retrievePerson(c *gin.Context) {
 		return
 	}
 
+	c.Header("Access-Control-Allow-Origin", "*");
 	c.JSON(http.StatusOK, person.toPayload())
 
 	log.Infof("Found the requested person record (%s)", params.Pid)
@@ -225,12 +251,22 @@ func retrievePeople(c *gin.Context) {
 	var pagQuery paginationQuery
 
 	if err := c.ShouldBindQuery(&pagQuery); err != nil {
-		log.Infof("Query parameters unmarshalling error: %s", err)
+		log.Infof("Pagination query parameters unmarshalling error: %s", err)
 		c.JSON(http.StatusBadRequest, gin.H{"message": queryErrorMsg})
 		return
 	}
 
-	people, pagData, err := queryPeople(pagQuery.toPaginationData())
+	var searchQuery personSearchQuery
+
+	if err := c.ShouldBindQuery(&searchQuery); err != nil {
+		log.Infof("Search query parameters unmarshalling error: %s", err)
+		c.JSON(http.StatusBadRequest, gin.H{"message": queryErrorMsg})
+		return
+	}
+
+	people, pagData, err := queryPeople(
+		pagQuery.toPaginationData(),
+		searchQuery.toFilter(c.Request.URL.Query()))
 
 	if err != nil {
 		log.Errorf("An error occurred during people retrieval attempt (%s)", err)
@@ -241,6 +277,7 @@ func retrievePeople(c *gin.Context) {
 	reqUrl := location.Get(c)
 	reqUrl.Path = "/people"
 
+	c.Header("Access-Control-Allow-Origin", "*");
 	c.JSON(http.StatusOK, gin.H{
 		"pagination": pagData.getJson(*reqUrl),
 		"records":    people.toPayload(),
