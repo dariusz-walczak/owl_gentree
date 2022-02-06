@@ -85,7 +85,7 @@ func queryPeople(pag paginationData, filter personFilter) (personList, paginatio
 	first := minInt(pag.PageIdx*pag.PageSize, len(sorted))
 	last := minInt((pag.PageIdx+1)*pag.PageSize, len(sorted))
 
-	pag.TotalCnt = len(people)
+	pag.TotalCnt = len(sorted)
 
 	return sorted[first:last], pag, nil
 }
