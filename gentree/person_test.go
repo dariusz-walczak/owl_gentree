@@ -539,7 +539,10 @@ func TestRetrievePeopleRequestEmpty(t *testing.T) {
 	assert.Empty(t, resData.Pagination.PrevUrl)
 }
 
-/* Test if the retrieve people endpoint correctly handles result data pagination */
+/* Test if the retrieve people endpoint correctly handles result data pagination
+ *
+ * 1. Retrieval with the default (neutral) person filter
+ * 2. Retrieval with active person ids filter  */
 func TestRetrievePeopleRequestPagination(t *testing.T) {
 	router := setupRouter()
 
@@ -557,7 +560,10 @@ func TestRetrievePeopleRequestPagination(t *testing.T) {
 		"P11": personRecord{"P11", "Borys", "Kalinowski", gMale},
 		"P12": personRecord{"P12", "Oliwia", "Cieślak", gFemale},
 		"P13": personRecord{"P13", "Natalia", "Ziółkowska", gFemale},
+		"P14": personRecord{"P14", "Eleonora", "Cieślak", gFemale},
 	}
+
+	// Case 1: Neutral person filter
 
 	// Request the first page:
 
@@ -629,7 +635,7 @@ func TestRetrievePeopleRequestPagination(t *testing.T) {
 
 	resData = testPersonListRes(t, res)
 
-	assert.Len(t, resData.Records, 3)
+	assert.Len(t, resData.Records, 4)
 	assert.Equal(t, "P11", resData.Records[0].Id)
 	assert.Equal(t, "Borys", resData.Records[0].Given)
 	assert.Equal(t, "Kalinowski", resData.Records[0].Surname)
@@ -645,8 +651,104 @@ func TestRetrievePeopleRequestPagination(t *testing.T) {
 	assert.Equal(t, "Ziółkowska", resData.Records[2].Surname)
 	assert.Equal(t, gFemale, resData.Records[2].Gender)
 
+	assert.Equal(t, "P14", resData.Records[3].Id)
+	assert.Equal(t, "Eleonora", resData.Records[3].Given)
+	assert.Equal(t, "Cieślak", resData.Records[3].Surname)
+	assert.Equal(t, gFemale, resData.Records[3].Gender)
+
 	assert.Empty(t, resData.Pagination.NextUrl)
 	assert.Equal(t, "http://example.com/people?limit=10&page=0", resData.Pagination.PrevUrl)
+
+	// Case 2: Person id filter
+
+	// Request the first page:
+
+	res = testMakeRequest(
+		router, "GET",
+		"/people?limit=10&pids=P01&pids=P02&pids=P03&pids=P04&pids=P06&pids=P07&pids=P08&" +
+			"pids=P09&pids=P10&pids=P11&pids=P12&pids=P14", nil)
+
+	assert.Equal(t, http.StatusOK, res.Code)
+
+	resData = testPersonListRes(t, res)
+
+	assert.Len(t, resData.Records, 10)
+	assert.Equal(t, "P01", resData.Records[0].Id)
+	assert.Equal(t, "Lidia", resData.Records[0].Given)
+	assert.Equal(t, "Błaszczyk", resData.Records[0].Surname)
+	assert.Equal(t, gFemale, resData.Records[0].Gender)
+
+	assert.Equal(t, "P02", resData.Records[1].Id)
+	assert.Equal(t, "Lara", resData.Records[1].Given)
+	assert.Equal(t, "Szymańska", resData.Records[1].Surname)
+	assert.Equal(t, gFemale, resData.Records[1].Gender)
+
+	assert.Equal(t, "P03", resData.Records[2].Id)
+	assert.Equal(t, "Radosław", resData.Records[2].Given)
+	assert.Equal(t, "Kołodziej", resData.Records[2].Surname)
+	assert.Equal(t, gMale, resData.Records[2].Gender)
+
+	assert.Equal(t, "P04", resData.Records[3].Id)
+	assert.Equal(t, "Antonina", resData.Records[3].Given)
+	assert.Equal(t, "Kozłowska", resData.Records[3].Surname)
+	assert.Equal(t, gFemale, resData.Records[3].Gender)
+
+	assert.Equal(t, "P06", resData.Records[4].Id)
+	assert.Equal(t, "Bruno", resData.Records[4].Given)
+	assert.Equal(t, "Maciejewski", resData.Records[4].Surname)
+	assert.Equal(t, gMale, resData.Records[4].Gender)
+
+	assert.Equal(t, "P07", resData.Records[5].Id)
+	assert.Equal(t, "Mirosława", resData.Records[5].Given)
+	assert.Equal(t, "Czarnecka", resData.Records[5].Surname)
+	assert.Equal(t, gFemale, resData.Records[5].Gender)
+
+	assert.Equal(t, "P08", resData.Records[6].Id)
+	assert.Equal(t, "Elena", resData.Records[6].Given)
+	assert.Equal(t, "Szewczyk", resData.Records[6].Surname)
+	assert.Equal(t, gFemale, resData.Records[6].Gender)
+
+	assert.Equal(t, "P09", resData.Records[7].Id)
+	assert.Equal(t, "Ariel", resData.Records[7].Given)
+	assert.Equal(t, "Zalewski", resData.Records[7].Surname)
+	assert.Equal(t, gMale, resData.Records[7].Gender)
+
+	assert.Equal(t, "P10", resData.Records[8].Id)
+	assert.Equal(t, "Florian", resData.Records[8].Given)
+	assert.Equal(t, "Jankowski", resData.Records[8].Surname)
+	assert.Equal(t, gMale, resData.Records[8].Gender)
+
+	assert.Equal(t, "P11", resData.Records[9].Id)
+	assert.Equal(t, "Borys", resData.Records[9].Given)
+	assert.Equal(t, "Kalinowski", resData.Records[9].Surname)
+	assert.Equal(t, gMale, resData.Records[9].Gender)
+
+	assert.NotEmpty(t, resData.Pagination.NextUrl)
+	assert.Empty(t, resData.Pagination.PrevUrl)
+
+	// Request the second page:
+
+	res = testMakeRequest(router, "GET", resData.Pagination.NextUrl, nil)
+
+	assert.Equal(t, http.StatusOK, res.Code)
+
+	resData = testPersonListRes(t, res)
+
+	assert.Len(t, resData.Records, 2)
+
+
+	assert.Equal(t, "P12", resData.Records[0].Id)
+	assert.Equal(t, "Oliwia", resData.Records[0].Given)
+	assert.Equal(t, "Cieślak", resData.Records[0].Surname)
+	assert.Equal(t, gFemale, resData.Records[0].Gender)
+
+	assert.Equal(t, "P14", resData.Records[1].Id)
+	assert.Equal(t, "Eleonora", resData.Records[1].Given)
+	assert.Equal(t, "Cieślak", resData.Records[1].Surname)
+	assert.Equal(t, gFemale, resData.Records[1].Gender)
+
+	assert.Empty(t, resData.Pagination.NextUrl)
+	assert.NotEmpty(t, resData.Pagination.PrevUrl)
 }
 
 /* Test if the retrieve people endpoint correctly handles invalid pagination parameters */
