@@ -2,8 +2,8 @@ package main
 
 import (
 	log "github.com/sirupsen/logrus"
-	"sort"
 	"net/url"
+	"sort"
 )
 
 // Possible gender values
@@ -27,7 +27,7 @@ var people = map[string]personRecord{}
 
 /* Person filter specification */
 type personIdsFilter struct {
-	Value []string
+	Value   []string
 	Enabled bool
 }
 

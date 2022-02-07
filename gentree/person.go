@@ -28,8 +28,8 @@ type personSearchQuery struct {
  * * v url query (e.g. returned by Query method of the URL type)
  */
 func (q *personSearchQuery) toFilter(v url.Values) personFilter {
-	f := personFilter {
-		personIdsFilter{ append(make([]string, 0, len(q.Pids)), q.Pids...), false },
+	f := personFilter{
+		personIdsFilter{append(make([]string, 0, len(q.Pids)), q.Pids...), false},
 	}
 
 	for name := range v {
@@ -238,7 +238,7 @@ func retrievePerson(c *gin.Context) {
 		return
 	}
 
-	c.Header("Access-Control-Allow-Origin", "*");
+	c.Header("Access-Control-Allow-Origin", "*")
 	c.JSON(http.StatusOK, person.toPayload())
 
 	log.Infof("Found the requested person record (%s)", params.Pid)
@@ -277,7 +277,7 @@ func retrievePeople(c *gin.Context) {
 	reqUrl.Path = "/people"
 	reqUrl.RawQuery = personFilter.updateQuery(reqUrl.Query()).Encode()
 
-	c.Header("Access-Control-Allow-Origin", "*");
+	c.Header("Access-Control-Allow-Origin", "*")
 	c.JSON(http.StatusOK, gin.H{
 		"pagination": pagData.getJson(*reqUrl),
 		"records":    people.toPayload(),
