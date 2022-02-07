@@ -353,6 +353,7 @@ func retrieveRelations(c *gin.Context) {
 	reqUrl := location.Get(c)
 	reqUrl.Path = "/relations"
 
+	c.Header("Access-Control-Allow-Origin", "*")
 	c.JSON(http.StatusOK, gin.H{
 		"pagination": pagData.getJson(*reqUrl),
 		"records":    relations.toPayload(),
@@ -404,6 +405,7 @@ func retrievePersonRelations(c *gin.Context) {
 	reqUrl := location.Get(c)
 	reqUrl.Path = fmt.Sprintf("/people/%s/relations", params.Pid)
 
+	c.Header("Access-Control-Allow-Origin", "*")
 	c.JSON(http.StatusOK, gin.H{
 		"pagination": pagData.getJson(*reqUrl),
 		"records":    relations.toPayload(),
