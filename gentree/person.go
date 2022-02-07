@@ -264,9 +264,8 @@ func retrievePeople(c *gin.Context) {
 		return
 	}
 
-	people, pagData, err := queryPeople(
-		pagQuery.toPaginationData(),
-		searchQuery.toFilter(c.Request.URL.Query()))
+	personFilter := searchQuery.toFilter(c.Request.URL.Query())
+	people, pagData, err := queryPeople(pagQuery.toPaginationData(), personFilter)
 
 	if err != nil {
 		log.Errorf("An error occurred during people retrieval attempt (%s)", err)
@@ -276,6 +275,7 @@ func retrievePeople(c *gin.Context) {
 
 	reqUrl := location.Get(c)
 	reqUrl.Path = "/people"
+	reqUrl.RawQuery = personFilter.updateQuery(reqUrl.Query()).Encode()
 
 	c.Header("Access-Control-Allow-Origin", "*");
 	c.JSON(http.StatusOK, gin.H{

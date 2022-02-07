@@ -3,6 +3,7 @@ package main
 import (
 	log "github.com/sirupsen/logrus"
 	"sort"
+	"net/url"
 )
 
 // Possible gender values
@@ -30,8 +31,25 @@ type personIdsFilter struct {
 	Enabled bool
 }
 
+/* Update query with the person ids filter variables
+ *
+ * Params:
+ * * vals - the query values object to be modified */
+func (f *personIdsFilter) updateQuery(vals url.Values) {
+	vals.Del("pids")
+
+	for _, pid := range f.Value {
+		vals.Add("pids", pid)
+	}
+}
+
 type personFilter struct {
 	Ids personIdsFilter
+}
+
+func (f *personFilter) updateQuery(vals url.Values) url.Values {
+	f.Ids.updateQuery(vals)
+	return vals
 }
 
 /* Retrieve a person record by id
