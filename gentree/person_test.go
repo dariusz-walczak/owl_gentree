@@ -665,8 +665,8 @@ func TestRetrievePeopleRequestPagination(t *testing.T) {
 
 	res = testMakeRequest(
 		router, "GET",
-		"/people?limit=10&pids=P01&pids=P02&pids=P03&pids=P04&pids=P06&pids=P07&pids=P08&" +
-			"pids=P09&pids=P10&pids=P11&pids=P12&pids=P14", nil)
+		"/people?limit=10&pid=P01&pid=P02&pid=P03&pid=P04&pid=P06&pid=P07&pid=P08&pid=P09&" +
+			"pid=P10&pid=P11&pid=P12&pid=P14", nil)
 
 	assert.Equal(t, http.StatusOK, res.Code)
 

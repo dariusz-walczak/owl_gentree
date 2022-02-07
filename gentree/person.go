@@ -19,7 +19,7 @@ type fullPersonPayload struct {
 
 /* This structure is used to extract optional person search parameters from a request query */
 type personSearchQuery struct {
-	Pids []string `form:"pids"`
+	Pids []string `form:"pid"`
 }
 
 /* Create a person filter from a person search query
@@ -33,7 +33,7 @@ func (q *personSearchQuery) toFilter(v url.Values) personFilter {
 	}
 
 	for name := range v {
-		if name == "pids" {
+		if name == "pid" {
 			f.Ids.Enabled = true
 		}
 	}

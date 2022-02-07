@@ -36,10 +36,10 @@ type personIdsFilter struct {
  * Params:
  * * vals - the query values object to be modified */
 func (f *personIdsFilter) updateQuery(vals url.Values) {
-	vals.Del("pids")
+	vals.Del("pid")
 
 	for _, pid := range f.Value {
-		vals.Add("pids", pid)
+		vals.Add("pid", pid)
 	}
 }
 
