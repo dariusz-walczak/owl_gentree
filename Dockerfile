@@ -1,15 +1,12 @@
-FROM golang AS build
+FROM golang:1.21 AS build
 
 WORKDIR /build/gentree
-COPY gentree/go.mod .
-RUN ["go", "get", "-u", "github.com/gin-gonic/gin"]
-RUN ["go", "get", "-u", "github.com/sirupsen/logrus"]
-RUN ["go", "get", "-u", "github.com/jessevdk/go-flags"]
-RUN ["go", "get", "-u", "github.com/gin-contrib/location"]
+
+COPY go.mod go.sum ./
+RUN go mod download
 
 COPY  gentree/*.go ./
 RUN CGO_ENABLED=0 go build
-
 
 FROM alpine
 

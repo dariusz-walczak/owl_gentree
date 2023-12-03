@@ -12,13 +12,15 @@ gentree:
 	@echo "==================================================================================================="
 	sudo docker run -p 8080:8080/tcp -it --rm ${GENTREE_TAG} --log-level trace
 
+OUTPUT_PATH = "$(shell pwd)/output"
 
 run_ut:
 	sudo docker build -f run-unit-tests.Dockerfile --tag=${GENTREE_TEST_TAG} .
-	mkdir -p "$(shell pwd)/output"
+	mkdir -p ${OUTPUT_PATH}
 	sudo docker run --mount type=bind,source="$(shell pwd)/output",target=/output -it --rm \
-		${GENTREE_TEST_TAG} -coverprofile /output/gentree_cover.out
-	cd gentree && go tool cover -html=../output/gentree_cover.out -o ../output/cover.html
+		${GENTREE_TEST_TAG}
+	sudo chown --reference=${OUTPUT_PATH} \
+		${OUTPUT_PATH}/cover.html ${OUTPUT_PATH}/gentree_cover.out
 
 run_linter:
 	sudo docker build -f run-linter.Dockerfile --tag=${GENTREE_LINT_TAG} .
