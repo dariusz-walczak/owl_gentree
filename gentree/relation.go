@@ -411,5 +411,5 @@ func retrievePersonRelations(c *gin.Context) {
 		"records":    relations.toPayload(),
 	})
 
-	log.Infof("Found %d relations for the requested person (%s)", len(relations), params.Pid)
+	log.Infof("Found %d relation(s) for the requested person (%s)", len(relations), params.Pid)
 }
